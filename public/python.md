@@ -1,5 +1,6 @@
 
 ## What does the following code output?
+points: 10
 
 ```python
 print("Python!"[1])
