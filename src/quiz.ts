@@ -47,8 +47,8 @@ export abstract class BaseQuestion {
     visited: boolean;
     readonly maxScore: number;
     index: number;
-    responseTime: number = 0;
-    readonly allottedTime: number;
+    responseTimeMilliSeconds: number = 0;
+    readonly allottedTimeMilliSeconds: number;
 
     constructor(
         text: string,
@@ -58,7 +58,7 @@ export abstract class BaseQuestion {
         questionType: QuestionType,
         options: Config,
         maxScore: number = 1,
-        allottedTime: number = 5000,
+        allottedTime: number = 10000,
     ) {
         this.maxScore = maxScore;
         this.text = text;
@@ -69,7 +69,7 @@ export abstract class BaseQuestion {
         this.options = options;
         this.answers = answers;
         this.questionType = questionType;
-        this.allottedTime = allottedTime;
+        this.allottedTimeMilliSeconds = allottedTime;
         this.visited = false;
         autoBind(this);
         this.reset();
@@ -84,10 +84,21 @@ export abstract class BaseQuestion {
         this.solved = false;
         this.visited = false;
         this.showHint.set(false);
-        this.responseTime = 0;
+        this.responseTimeMilliSeconds = 0;
         if (this.options.shuffleAnswers) {
             this.answers = shuffle(this.answers, this.answers.length);
         }
+    }
+
+    computeKahootStyleScore() {
+        if (!this.isCorrect()) return 0;
+        if (this.responseTimeMilliSeconds < 500) return this.maxScore;
+        if (this.responseTimeMilliSeconds >= this.allottedTimeMilliSeconds) return 0;
+        // https://support.kahoot.com/hc/en-us/articles/115002303908-How-points-work        
+        const unrounded = this.maxScore * (1 - this.responseTimeMilliSeconds / this.allottedTimeMilliSeconds / 2);
+        // const nearestThousandths = (x: number) => Math.round(1000 * x) / 1000;
+        // return nearestThousandths(unrounded);
+        return Math.round(unrounded);
     }
 
     abstract isCorrect(): boolean;
@@ -343,7 +354,7 @@ export class Quiz {
         let points = 0;
         for (var q of this.questions) {
             if (q.isCorrect()) {
-                points += q.maxScore
+                points += q.computeKahootStyleScore()
             }
         }
         this.isEvaluated.set(true);

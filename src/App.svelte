@@ -47,9 +47,9 @@
         const time = window.performance.now();
         if ($index >= 0) {
             const timeSinceLastUpdate = time - last_time;
-            $question.responseTime = Math.min(
-                $question.allottedTime,
-                $question.responseTime + timeSinceLastUpdate
+            $question.responseTimeMilliSeconds = Math.min(
+                $question.allottedTimeMilliSeconds,
+                $question.responseTimeMilliSeconds + timeSinceLastUpdate
             );
         }
         last_time = time;
@@ -237,7 +237,9 @@
                 </span>
             </Button>
         </Row>
-        <progress value="{$question.responseTime / $question.allottedTime}"
+        <progress
+            value="{$question.responseTimeMilliSeconds /
+                $question.allottedTimeMilliSeconds}"
         ></progress>
     {/if}
 </div>
