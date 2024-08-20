@@ -49,6 +49,7 @@ export class Config {
     activeLineNumber: number;
     activeQuestion: number;
     pointsForQuestion: number;
+    timeForQuestion: number;
 
     constructor(options: Config | object) {
         // handle <=v0.3.0 snake_case options for backwards compatibility
@@ -69,6 +70,7 @@ export class Config {
         this.title = get(options['title'], '');
         this.description = get(options['description'], '');
         this.pointsForQuestion = get(options['pointsForQuestion'], 1);
+        this.timeForQuestion = get(options['timeForQuestion'], 10);
     }
 }
 

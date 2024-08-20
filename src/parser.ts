@@ -161,9 +161,11 @@ function extractQuestions(
 
         let currentTokens = tokens.slice(startIdx, nextQuestionIdx);
         let questionType = determineQuestionType(currentTokens);
-        config.pointsForQuestion = parsePoints(currentTokens) || config.pointsForQuestion;
-        // config.timeForQuestion = parseTime(currentTokens) || config.timeForQuestion;
-        if (questionType != 'InvalidQuestion') {
+        const timeHeading = parseTime(currentTokens);
+        const pointsHeading = parsePoints(currentTokens);
+        config.timeForQuestion = timeHeading || config.timeForQuestion;
+        config.pointsForQuestion = pointsHeading || config.pointsForQuestion;
+        if (questionType != 'InvalidQuestion' && !timeHeading && !pointsHeading) {
             let question = parseQuestion(questionType, currentTokens, config);
             questions.push(question);
         } else {
@@ -213,7 +215,7 @@ function directiveParser(key: string): (tokens: marked.Token[]) => number {
     const pattern = new RegExp("^\\s*" + key + ":\\s*(\\d+\\.?\\d*)", "i");
     return (tokens: marked.Token[]): number => {
         for (const token of tokens) {
-            if (token.type == 'paragraph') {
+            if (token.type == 'heading') {
                 const matched = token.text.match(pattern);
                 if (matched) return Number(matched[1]);
             }
@@ -222,12 +224,12 @@ function directiveParser(key: string): (tokens: marked.Token[]) => number {
     }
 }
 
+const parseTime = directiveParser("time");
 const parsePoints = directiveParser("points");
-// const parseTime = directiveParser("time");
 
 function parseExplanation(tokens: marked.Token[]): string {
     let explanations = tokens.filter(
-        (token) => token['type'] == 'paragraph' && !parsePoints([token]) || token['type'] == 'code'
+        (token) => token['type'] == 'paragraph' || token['type'] == 'code'
     );
     return parseTokens(explanations);
 }

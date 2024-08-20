@@ -57,9 +57,9 @@ export abstract class BaseQuestion {
         answers: Array<Answer>,
         questionType: QuestionType,
         options: Config,
-        allottedTime: number = 10000,
+        skipScore: boolean = false
     ) {
-        this.maxScore = options.pointsForQuestion;
+        this.maxScore = skipScore ? 0 : options.pointsForQuestion;
         this.text = text;
         this.explanation = explanation;
         this.hint = hint;
@@ -68,7 +68,7 @@ export abstract class BaseQuestion {
         this.options = options;
         this.answers = answers;
         this.questionType = questionType;
-        this.allottedTimeMilliSeconds = allottedTime;
+        this.allottedTimeMilliSeconds = options.timeForQuestion * 1000;
         this.visited = false;
         autoBind(this);
         this.reset();
@@ -185,7 +185,7 @@ export class NoChoiceQuestion extends Choice {
         answers: Array<Answer>,
         options: Config
     ) {
-        super(text, explanation, hint, answers, 'NoChoiceQuestion', options, 0);
+        super(text, explanation, hint, answers, 'NoChoiceQuestion', options, true);
     }
     isCorrect() {
         this.solved = true;
@@ -201,7 +201,7 @@ export class Information extends BaseQuestion {
         answers: Array<Answer>,
         options: Config
     ) {
-        super(text, explanation, hint, answers, 'Information', options, 0);
+        super(text, explanation, hint, answers, 'Information', options, true);
     }
     isCorrect() {
         this.solved = true;

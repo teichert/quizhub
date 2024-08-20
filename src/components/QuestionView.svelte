@@ -1,5 +1,6 @@
 <script lang="ts">
     import Button from './Button.svelte';
+    import Row from './Row.svelte';
     import Icon from './Icon.svelte';
     import Hint from './Hint.svelte';
     import type { QuestionType, BaseQuestion } from '../quiz';
@@ -22,6 +23,14 @@
         InvalidQuestion: ChoiceView,
     };
 </script>
+
+<Row>
+    <p slot="left">Possible Points: {question.maxScore}</p>
+    <h2 slot="center">Question {question.index}</h2>
+    <p slot="right">
+        Allotted Time: {Math.round(question.allottedTimeMilliSeconds / 1000)} seconds
+    </p>
+</Row>
 
 <h3 style="text-align: center;">
     {@html question.text}

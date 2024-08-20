@@ -1,6 +1,9 @@
 
+## points: 10
+
+## time: 20
+
 ## What does the following code output?
-points: 10
 
 ```python
 print("Python!"[1])

@@ -45,7 +45,7 @@
         frame = requestAnimationFrame(update);
 
         const time = window.performance.now();
-        if ($index >= 0) {
+        if ($isStarted && !$onResults) {
             const timeSinceLastUpdate = time - last_time;
             $question.responseTimeMilliSeconds = Math.min(
                 $question.allottedTimeMilliSeconds,
@@ -238,7 +238,6 @@
             </Button>
         </Row>
         <div>
-            <span>Points for this question: {$question.maxScore}</span>
             <progress
                 value="{$question.responseTimeMilliSeconds /
                     $question.allottedTimeMilliSeconds}"
