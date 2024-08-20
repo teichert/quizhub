@@ -84,6 +84,7 @@ export abstract class BaseQuestion {
         this.solved = false;
         this.visited = false;
         this.showHint.set(false);
+        this.responseTime = 0;
         if (this.options.shuffleAnswers) {
             this.answers = shuffle(this.answers, this.answers.length);
         }
@@ -342,7 +343,7 @@ export class Quiz {
         let points = 0;
         for (var q of this.questions) {
             if (q.isCorrect()) {
-                points += q.maxScore;
+                points += q.maxScore
             }
         }
         this.isEvaluated.set(true);
