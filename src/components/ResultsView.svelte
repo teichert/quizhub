@@ -43,16 +43,21 @@
                 >
                     <span class="list-question">
                         <span
-                            style="padding: 5px; color: {question.solved
+                        style="padding: 5px; color: {question.solved
                                 ? '#16cc16'
                                 : '#ff3131'}"
                         >
-                            <Icon
-                                name="{question.solved
+                        <Icon
+                        name="{question.solved
                                     ? 'circle-check'
                                     : 'circle-xmark'}"
                             ></Icon>
                         </span>
+                        <progress
+                            style="width: 10%;"
+                            value="{question.responseTimeMilliSeconds /
+                                question.allottedTimeMilliSeconds}"
+                        ></progress>
                         <span style="padding: 5px;">
                             {@html question.text}
                         </span>

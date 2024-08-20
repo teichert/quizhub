@@ -236,12 +236,12 @@
                 </span>
             </Button>
         </Row>
-        <div>
+        {#if !$onResults && !$onIntro}
             <progress
                 value="{$question.responseTimeMilliSeconds /
                     $question.allottedTimeMilliSeconds}"
             ></progress>
-        </div>
+        {/if}
     {/if}
 </div>
 
