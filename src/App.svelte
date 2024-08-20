@@ -37,7 +37,6 @@
     let maxScore: number;
 
     // idea from https://svelte.dev/examples/7guis-timer
-    let duration = 10000;
     let last_time = window.performance.now();
     let frame;
 
