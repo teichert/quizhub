@@ -165,7 +165,7 @@ function extractQuestions(
         const pointsHeading = parsePoints(currentTokens);
         config.timeForQuestion = timeHeading || config.timeForQuestion;
         config.pointsForQuestion = pointsHeading || config.pointsForQuestion;
-        if (questionType != 'InvalidQuestion' && !timeHeading && !pointsHeading) {
+        if (questionType != 'InvalidQuestion') {
             let question = parseQuestion(questionType, currentTokens, config);
             questions.push(question);
         } else {
@@ -207,7 +207,7 @@ function parseQuestion(
 }
 
 function parseHint(tokens: marked.Token[]): string {
-    let blockquotes = tokens.filter((token) => token['type'] == 'blockquote');
+    let blockquotes = tokens.filter((token) => token['type'] == 'blockquote' && !parseTime([token]) && !parsePoints([token]));
     return parseTokens(blockquotes);
 }
 
@@ -215,7 +215,7 @@ function directiveParser(key: string): (tokens: marked.Token[]) => number {
     const pattern = new RegExp("^\\s*" + key + ":\\s*(\\d+\\.?\\d*)", "i");
     return (tokens: marked.Token[]): number => {
         for (const token of tokens) {
-            if (token.type == 'heading') {
+            if (token.type == 'blockquote') {
                 const matched = token.text.match(pattern);
                 if (matched) return Number(matched[1]);
             }
@@ -257,7 +257,7 @@ function parseAnswers(tokens: marked.Token[]): Array<Answer> {
 }
 
 function parseAnswer(item: marked.Tokens.ListItem) {
-    let comments = item['tokens'].filter((token) => token.type == 'blockquote');
+    let comments = item['tokens'].filter((token) => token.type == 'blockquote' && !parseTime([token]) && !parsePoints([token]));
     let texts = item['tokens'].filter((token) => token.type != 'blockquote');
     return { text: parseTokens(texts), comment: parseTokens(comments) };
 }

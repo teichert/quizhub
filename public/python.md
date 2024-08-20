@@ -1,7 +1,7 @@
 
-## points: 10
+> points: 10
 
-## time: 20
+> time: 20
 
 ## What does the following code output?
 

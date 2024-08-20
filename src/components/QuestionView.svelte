@@ -26,7 +26,7 @@
 
 <Row>
     <p slot="left">Possible Points: {question.maxScore}</p>
-    <h2 slot="center">Question {question.index}</h2>
+    <h2 slot="center">Question {question.index + 1}</h2>
     <p slot="right">
         Allotted Time: {Math.round(question.allottedTimeMilliSeconds / 1000)} seconds
     </p>
