@@ -47,8 +47,8 @@ export abstract class BaseQuestion {
     visited: boolean;
     readonly maxScore: number;
     index: number;
-    elapsedTime: number = 0;
-    readonly maxTimeMiliSeconds: number;
+    responseTime: number = 0;
+    readonly allottedTime: number;
 
     constructor(
         text: string,
@@ -58,7 +58,7 @@ export abstract class BaseQuestion {
         questionType: QuestionType,
         options: Config,
         maxScore: number = 1,
-        maxTimeMiliSeconds: number = 5000,
+        allottedTime: number = 5000,
     ) {
         this.maxScore = maxScore;
         this.text = text;
@@ -69,7 +69,7 @@ export abstract class BaseQuestion {
         this.options = options;
         this.answers = answers;
         this.questionType = questionType;
-        this.maxTimeMiliSeconds = maxTimeMiliSeconds;
+        this.allottedTime = allottedTime;
         this.visited = false;
         autoBind(this);
         this.reset();
@@ -88,6 +88,7 @@ export abstract class BaseQuestion {
             this.answers = shuffle(this.answers, this.answers.length);
         }
     }
+
     abstract isCorrect(): boolean;
 }
 
