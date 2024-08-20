@@ -2,7 +2,7 @@
 ## What does the following code output?
 
 ```python
-print("Python"[1])
+print("Python!"[1])
 ```
 
 1. [ ] P

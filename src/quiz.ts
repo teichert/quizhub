@@ -47,6 +47,7 @@ export abstract class BaseQuestion {
     visited: boolean;
     readonly maxScore: number;
     index: number;
+    elapsedTime: number = 0;
 
     constructor(
         text: string,

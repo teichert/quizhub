@@ -20,6 +20,7 @@
     // import Modal from './components/Modal.svelte';
     import { fade } from 'svelte/transition';
     import { beforeUpdate } from 'svelte';
+    import { onDestroy } from 'svelte';
 
     export let quiz: Quiz;
     // https://github.com/sveltejs/svelte/issues/4079
@@ -34,6 +35,29 @@
     $: allVisited = quiz.allVisited;
 
     let maxScore: number;
+
+    // idea from https://svelte.dev/examples/7guis-timer
+    let duration = 10000;
+    let last_time = window.performance.now();
+    let frame;
+
+    (function update() {
+        frame = requestAnimationFrame(update);
+
+        const time = window.performance.now();
+        if ($index >= 0) {
+            const elapsed = time - last_time;
+            $question.elapsedTime = Math.min(
+                duration,
+                $question.elapsedTime + elapsed
+            );
+        }
+        last_time = time;
+    })();
+
+    onDestroy(() => {
+        cancelAnimationFrame(frame);
+    });
 
     beforeUpdate(() => {
         maxScore = quiz.maxScoreTotal();
@@ -213,6 +237,7 @@
                 </span>
             </Button>
         </Row>
+        <progress value="{$question.elapsedTime / duration}"></progress>
     {/if}
 </div>
 
@@ -221,6 +246,10 @@
     @import 'highlight.js/styles/github';
     @import 'katex/dist/katex';
     @import '@fortawesome/fontawesome-svg-core/styles';
+
+    progress {
+        width: 100%;
+    }
 
     .hidden {
         position: absolute;
