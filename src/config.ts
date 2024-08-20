@@ -48,6 +48,7 @@ export class Config {
     // editor specific
     activeLineNumber: number;
     activeQuestion: number;
+    pointsForQuestion: number;
 
     constructor(options: Config | object) {
         // handle <=v0.3.0 snake_case options for backwards compatibility
@@ -67,6 +68,7 @@ export class Config {
         this.authorImageUrl = get(options['authorImageUrl'], '');
         this.title = get(options['title'], '');
         this.description = get(options['description'], '');
+        this.pointsForQuestion = get(options['pointsForQuestion'], 1);
     }
 }
 

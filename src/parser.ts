@@ -161,7 +161,7 @@ function extractQuestions(
 
         let currentTokens = tokens.slice(startIdx, nextQuestionIdx);
         let questionType = determineQuestionType(currentTokens);
-
+        config.pointsForQuestion = parsePoints(currentTokens) || config.pointsForQuestion;
         if (questionType != 'InvalidQuestion') {
             let question = parseQuestion(questionType, currentTokens, config);
             questions.push(question);
@@ -181,7 +181,7 @@ function extractQuestions(
 function parseQuestion(
     questionType: QuestionType,
     tokens: marked.Token[],
-    config: Config
+    config: Config,
 ): BaseQuestion {
     let explanation = parseExplanation(tokens);
     let hint = parseHint(tokens);
@@ -208,9 +208,19 @@ function parseHint(tokens: marked.Token[]): string {
     return parseTokens(blockquotes);
 }
 
+function parsePoints(tokens: marked.Token[]): number {
+    for (const token of tokens) {
+        if (token.type == 'paragraph') {
+            const matched = token.text.match(/^\s*points:\s*(\d+\.?\d*)/i);
+            if (matched) return Number(matched[1]);
+        }
+    }
+    return null;
+}
+
 function parseExplanation(tokens: marked.Token[]): string {
     let explanations = tokens.filter(
-        (token) => token['type'] == 'paragraph' || token['type'] == 'code'
+        (token) => token['type'] == 'paragraph' && !parsePoints([token]) || token['type'] == 'code'
     );
     return parseTokens(explanations);
 }

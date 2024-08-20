@@ -45,10 +45,10 @@ export abstract class BaseQuestion {
     readonly options: Config;
     showHint: Writable<boolean>;
     visited: boolean;
-    readonly maxScore: number;
+    maxScore: number;
     index: number;
     responseTimeMilliSeconds: number = 0;
-    readonly allottedTimeMilliSeconds: number;
+    allottedTimeMilliSeconds: number;
 
     constructor(
         text: string,
@@ -57,10 +57,9 @@ export abstract class BaseQuestion {
         answers: Array<Answer>,
         questionType: QuestionType,
         options: Config,
-        maxScore: number = 1,
         allottedTime: number = 10000,
     ) {
-        this.maxScore = maxScore;
+        this.maxScore = options.pointsForQuestion;
         this.text = text;
         this.explanation = explanation;
         this.hint = hint;

@@ -237,10 +237,13 @@
                 </span>
             </Button>
         </Row>
-        <progress
-            value="{$question.responseTimeMilliSeconds /
-                $question.allottedTimeMilliSeconds}"
-        ></progress>
+        <div>
+            <span>Points for this question: {$question.maxScore}</span>
+            <progress
+                value="{$question.responseTimeMilliSeconds /
+                    $question.allottedTimeMilliSeconds}"
+            ></progress>
+        </div>
     {/if}
 </div>
 
