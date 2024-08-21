@@ -100,7 +100,7 @@
 <div class="quizdown-content" bind:this="{node}">
     {#if $onIntro}
         <Container additionalClasses="intro-page">
-            <a href="/" title="home">
+            <a href="/quizhub/" title="home">
                 <Button title="home" size="large">
                     <span style="color: var(--quizdown-color-primary)">
                         <Icon name="lightbulb" size="2x"></Icon>
