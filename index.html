@@ -188,7 +188,7 @@
                     document.getElementById('submitButton');
 
                 markdownDownload(
-                    '/demo.md',
+                    '/quizhub/demo.md',
                     (markdown, params) => {
                         if (!markdown) {
                             return;
@@ -495,77 +495,13 @@
                 </tr>
                 <tr>
                     <td>
-                        <a href="/edit/?s=/basics.md">basics.md</a>
+                        <a href="/quizhub/edit/?s=/quizhub/python.md">python.md</a>
                     </td>
                     <td>
-                        <a href="/?s=/basics.md">Basic Quiz</a>
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <a href="/edit/?s=/maths.md">maths.md</a>
-                    </td>
-                    <td>
-                        <a href="/?s=/maths.md">Maths Quiz</a>
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <a href="/edit/?s=/python.md">python.md</a>
-                    </td>
-                    <td>
-                        <a href="/?s=/python.md">Python Quiz</a>
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <a href="/edit/?s=/hindi.md">hindi.md</a>
-                    </td>
-                    <td>
-                        <a href="/?s=/hindi.md">Hindi</a>
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <a href="/edit/?s=/sample.md">sample.md</a>
-                    </td>
-                    <td>
-                        <a href="/?s=/sample.md">Sample Quiz</a>
+                        <a href="/quizhub/?s=/quizhub/python.md">python quiz</a>
                     </td>
                 </tr>
             </table>
-
-            <br />
-
-            <span>
-                You can also load a quiz using the URL of your existing
-                markdown file. For example: Try copy-pasting
-                <a onclick="document.getElementById('urlInput').value = 'https://gist.github.com/varun-seth/7d273c464beac64c7ace9493c91301f5'; return false;"
-                    href="https://gist.github.com/varun-seth/7d273c464beac64c7ace9493c91301f5">this link</a>
-            </span>
-            <br />
-
-            <div style="
-                        display: flex;
-                        width: 100%;
-                        align-items: center;
-                        max-width: 480px;
-                    ">
-                <input class="url-input" type="text"
-                    placeholder="Enter the URL of a markdown file that contains the quiz." id="urlInput" />
-                <button class="submit-button" id="submitButton">GO</button>
-            </div>
-
-            Native github and gist urls are supported. The github repository
-            must be public. But the gist can be hidden.
-
-            <br />
-
-            <!-- <div style="text-align: center">
-                <a href="/privacy.html"> Privacy Policy </a>
-                &nbsp;
-                <a href="/terms.html"> Terms Of Service </a>
-            </div> -->
         </div>
     </div>
 </body>
