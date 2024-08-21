@@ -1,168 +1,169 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <link rel="manifest" href="/manifest.webmanifest" />
 
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width,initial-scale=1" />
+<head>
+    <!-- <base href="/quizhub/"> -->
+    <link rel="manifest" href="/manifest.webmanifest" />
 
-        <title>QuizHub Editor</title>
-        <meta
-            name="description"
-            content="Quizhub Editor - Make interactive quizzes and share with everyone! Supports Markdown Language, Multiple Choice Questions, Single Choice Questions, Sequence arrangement etc."
-        />
-        <link rel="apple-touch-icon" href="/icon.png" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
 
-        <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <title>QuizHub Editor</title>
+    <meta name="description"
+        content="Quizhub Editor - Make interactive quizzes and share with everyone! Supports Markdown Language, Multiple Choice Questions, Single Choice Questions, Sequence arrangement etc." />
+    <link rel="apple-touch-icon" href="/icon.png" />
 
-        <script
-            src="https://accounts.google.com/gsi/client"
-            async
-            defer
-        ></script>
-        <script src="https://apis.google.com/js/api.js"></script>
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
 
-        <script src="/build/quizdown.js"></script>
-        <script src="/build/extensions/quizdownKatex.js"></script>
-        <script src="/build/extensions/quizdownHighlight.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs/loader.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://apis.google.com/js/api.js"></script>
 
-        <style>
-            html,
-            body {
-                font-family: sans-serif;
-                height: 100%;
-                margin: 0;
-                display: flex;
-                flex-direction: column; /
-            }
-            #editorContainer,
-            #quizContainer {
-                height: 100%;
-                width: 50%;
-                float: left;
-            }
+    <script src="/build/quizdown.js"></script>
+    <script src="/build/extensions/quizdownKatex.js"></script>
+    <script src="/build/extensions/quizdownHighlight.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs/loader.js"></script>
 
-            .toolbar {
-                background: color-mix(in srgb, var(--toolbar-color-primary) 20%, white 80%);
-                height: 48px;
-                display: flex;
-                justify-content: space-between; /* Align items to the start and end */
-                align-items: center; /* Center items vertically */
+    <style>
+        html,
+        body {
+            font-family: sans-serif;
+            height: 100%;
+            margin: 0;
+            display: flex;
+            flex-direction: column;/
+        }
 
-            }
-            .container {
-                display: flex;
-                height: calc(100% - 48px);
-                overflow: hidden;
-            }
+        #editorContainer,
+        #quizContainer {
+            height: 100%;
+            width: 50%;
+            float: left;
+        }
 
-            .quizdown {
-                height: 100%;
-            }
-        </style>
-    </head>
+        .toolbar {
+            background: color-mix(in srgb, var(--toolbar-color-primary) 20%, white 80%);
+            height: 48px;
+            display: flex;
+            justify-content: space-between;
+            /* Align items to the start and end */
+            align-items: center;
+            /* Center items vertically */
 
-    <body>
-        <div id="toolbar" class="toolbar"></div>
-        <div class="container">
-            <div id="editorContainer"></div>
-            <div id="quizContainer"></div>
-        </div>
+        }
 
-        <script>
-            require.config({
-                paths: {
-                    vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs',
-                },
-            });
-            require(['vs/editor/editor.main'], function () {
-                const toolbarElement = document.getElementById('toolbar');
+        .container {
+            display: flex;
+            height: calc(100% - 48px);
+            overflow: hidden;
+        }
 
-                const myToolbar = quizdown.createToolbar(toolbarElement); // Assuming this is your toolbar instance
+        .quizdown {
+            height: 100%;
+        }
+    </style>
+</head>
 
-                let editor;
+<body>
+    <div id="toolbar" class="toolbar"></div>
+    <div class="container">
+        <div id="editorContainer"></div>
+        <div id="quizContainer"></div>
+    </div>
 
-                myToolbar.registerTextChange((newContent) => {
-                    if (!editor) {
-                        console.log('Creating editor');
-                        editor = monaco.editor.create(
-                            document.getElementById('editorContainer'),
-                            {
-                                value: newContent,
-                                language: 'markdown',
-                                minimap: { enabled: false },
-                                // lineNumbers: 'off',
-                                glyphMargin: false,
-                                folding: false,
-                            }
+    <script>
+        require.config({
+            paths: {
+                vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs',
+            },
+        });
+        require(['vs/editor/editor.main'], function () {
+            const toolbarElement = document.getElementById('toolbar');
+
+            const myToolbar = quizdown.createToolbar(toolbarElement); // Assuming this is your toolbar instance
+
+            let editor;
+
+            myToolbar.registerTextChange((newContent) => {
+                if (!editor) {
+                    console.log('Creating editor');
+                    editor = monaco.editor.create(
+                        document.getElementById('editorContainer'),
+                        {
+                            value: newContent,
+                            language: 'markdown',
+                            minimap: { enabled: false },
+                            // lineNumbers: 'off',
+                            glyphMargin: false,
+                            folding: false,
+                        }
+                    );
+                    editor.onDidChangeModelContent(onUpdate);
+                    // TODO: expose a function that shows the correct question.
+                    editor.onDidChangeCursorPosition(onUpdate);
+
+                    // Intercept Ctrl+S and Command+S
+                    editor.addCommand(
+                        monaco.KeyMod.CtrlCmd | monaco.KeyCode.KEY_S,
+                        function () {
+                            myToolbar.save();
+                        }
+                    );
+
+                    renderQuiz(newContent);
+                } else {
+                    // Logic to update Monaco editor or perform other actions
+                    const fullModelRange = editor
+                        .getModel()
+                        .getFullModelRange();
+                    const editOperation = {
+                        range: fullModelRange,
+                        text: newContent,
+                        forceMoveMarkers: true,
+                    };
+                    editor
+                        .getModel()
+                        .pushEditOperations(
+                            [],
+                            [editOperation],
+                            () => null
                         );
-                        editor.onDidChangeModelContent(onUpdate);
-                        // TODO: expose a function that shows the correct question.
-                        editor.onDidChangeCursorPosition(onUpdate);
-
-                        // Intercept Ctrl+S and Command+S
-                        editor.addCommand(
-                            monaco.KeyMod.CtrlCmd | monaco.KeyCode.KEY_S,
-                            function () {
-                                myToolbar.save();
-                            }
-                        );
-
-                        renderQuiz(newContent);
-                    } else {
-                        // Logic to update Monaco editor or perform other actions
-                        const fullModelRange = editor
-                            .getModel()
-                            .getFullModelRange();
-                        const editOperation = {
-                            range: fullModelRange,
-                            text: newContent,
-                            forceMoveMarkers: true,
-                        };
-                        editor
-                            .getModel()
-                            .pushEditOperations(
-                                [],
-                                [editOperation],
-                                () => null
-                            );
-                    }
-                });
-
-                let renderQuizDebounceTimer;
-                function onUpdate() {
-                    let currentPosition = editor.getPosition();
-                    let activeLineNumber = currentPosition.lineNumber;
-                    let currentContent = editor.getValue();
-
-                    clearTimeout(renderQuizDebounceTimer);
-                    renderQuizDebounceTimer = setTimeout(function () {
-                        renderQuiz(currentContent, activeLineNumber);
-                        myToolbar.onTextChange(currentContent);
-                    }, 400); // Wait for 1 second before rendering
                 }
             });
 
-            function renderQuiz(markdown, activeLineNumber = 0) {
-                const quizContainer = document.getElementById('quizContainer');
-                quizContainer.innerHTML = ''; // Clear previous content
-                const newQuizElement = document.createElement('div');
-                newQuizElement.className = 'quizdown';
-                quizContainer.appendChild(newQuizElement);
+            let renderQuizDebounceTimer;
+            function onUpdate() {
+                let currentPosition = editor.getPosition();
+                let activeLineNumber = currentPosition.lineNumber;
+                let currentContent = editor.getValue();
 
-                let config = {
-                    shuffleAnswers: false,
-                    shuffleQuestions: false,
-                    primaryColor: '#1b73e8',
-                    secondaryColor: '#f8f8f8',
-                    activeLineNumber: activeLineNumber,
-                };
-                quizdown
-                    .register(quizdownKatex)
-                    .register(quizdownHighlight)
-                    .createApp(markdown, newQuizElement, config);
+                clearTimeout(renderQuizDebounceTimer);
+                renderQuizDebounceTimer = setTimeout(function () {
+                    renderQuiz(currentContent, activeLineNumber);
+                    myToolbar.onTextChange(currentContent);
+                }, 400); // Wait for 1 second before rendering
             }
-        </script>
-    </body>
+        });
+
+        function renderQuiz(markdown, activeLineNumber = 0) {
+            const quizContainer = document.getElementById('quizContainer');
+            quizContainer.innerHTML = ''; // Clear previous content
+            const newQuizElement = document.createElement('div');
+            newQuizElement.className = 'quizdown';
+            quizContainer.appendChild(newQuizElement);
+
+            let config = {
+                shuffleAnswers: false,
+                shuffleQuestions: false,
+                primaryColor: '#1b73e8',
+                secondaryColor: '#f8f8f8',
+                activeLineNumber: activeLineNumber,
+            };
+            quizdown
+                .register(quizdownKatex)
+                .register(quizdownHighlight)
+                .createApp(markdown, newQuizElement, config);
+        }
+    </script>
+</body>
+
 </html>

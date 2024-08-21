@@ -6,7 +6,7 @@ I'm working on this project in my free time to learn more about modern web devel
 
 This project uses and extends an open source library called [quizdown-js](https://github.com/bonartm/quizdown-js). My contribution is mainly towards making this library easier to use for non-developers.
 
-### 🚀 Try the [QuizHub live editor](https://quizhub.in/edit/)
+### 🚀 Try the QuizHub live editor
 
 - supports markdown text formatting, images, syntax highlighting and math rendering.
 - different [quiz-types](./docs/syntax.md): single-choice, multiple-choice, sequence.
