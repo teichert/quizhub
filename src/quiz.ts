@@ -185,7 +185,7 @@ export class NoChoiceQuestion extends Choice {
         answers: Array<Answer>,
         options: Config
     ) {
-        super(text, explanation, hint, answers, 'NoChoiceQuestion', options, true);
+        super(text, explanation, hint, answers, 'NoChoiceQuestion', options);
     }
     isCorrect() {
         this.solved = true;
@@ -201,7 +201,7 @@ export class Information extends BaseQuestion {
         answers: Array<Answer>,
         options: Config
     ) {
-        super(text, explanation, hint, answers, 'Information', options, true);
+        super(text, explanation, hint, answers, 'Information', options);
     }
     isCorrect() {
         this.solved = true;
