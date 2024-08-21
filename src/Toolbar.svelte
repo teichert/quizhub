@@ -5,22 +5,11 @@
     import { writable, get } from 'svelte/store';
     import { onMount } from 'svelte';
 
-    const TOKEN_KEY = 'google_token';
-    const USER_KEY = 'google_user';
-
-    const clientId = process.env.CLIENT_ID;
-    const apiKey = process.env.API_KEY;
-    const userInfo = writable(null);
-    const accessToken = writable('');
-
     let fileId = null;
     let filename = writable('');
 
     let isRenewing = false;
     let isLoading = false;
-    let isSaving = false;
-    let isSharing = false;
-    let isRenaming = false;
 
     // Store for toolbar content
     export const content = writable('');
@@ -41,22 +30,7 @@
             '#1b73e8'
         );
 
-        const storedUserInfo = localStorage.getItem(USER_KEY);
-        if (storedUserInfo) {
-            userInfo.set(JSON.parse(storedUserInfo));
-        }
-        const storedAccessToken = localStorage.getItem(TOKEN_KEY);
-        if (storedAccessToken) {
-            accessToken.set(JSON.parse(storedAccessToken));
-        }
-
         const queryParams = new URLSearchParams(window.location.search);
-        fileId = queryParams.get('gdrive');
-        if (fileId) {
-            // Proceed to make an API call to get the file
-            getFileDetails();
-            return;
-        }
 
         const sourceUrl = queryParams.get('source') || queryParams.get('s');
         if (sourceUrl) {
@@ -69,169 +43,6 @@
 
         fetchStorageContent();
     });
-
-    let renameDebounceTimer;
-
-    function handleFilenameChange(event) {
-        let newName = event.target.value;
-
-        if (!newName) {
-            console.log('Filename cannot be empty');
-            return;
-        }
-
-        filename.set(newName);
-
-        let currentAccesstoken = get(accessToken);
-        if (!currentAccesstoken) {
-            alert('Login required to rename file');
-            return;
-        }
-
-        clearTimeout(renameDebounceTimer);
-
-        renameDebounceTimer = setTimeout(() => {
-            renameFile(fileId, get(filename), currentAccesstoken.token);
-        }, 1000);
-    }
-
-    async function renameFile(fileId, newName, accessToken, afterRenameFn) {
-        if (!newName.endsWith('.md')) {
-            newName = `${newName}.md`;
-        }
-
-        isRenaming = true;
-        const url = `https://www.googleapis.com/drive/v3/files/${fileId}`;
-
-        const response = await fetch(url, {
-            method: 'PATCH',
-            headers: new Headers({
-                Authorization: `Bearer ${accessToken}`,
-                'Content-Type': 'application/json',
-            }),
-            body: JSON.stringify({
-                name: newName,
-            }),
-        });
-
-        if (response.ok) {
-            const result = await response.json();
-            console.log('File renamed successfully:', result);
-            if (afterRenameFn) {
-                afterRenameFn(result);
-            }
-            isRenaming = false;
-            return result;
-        } else {
-            console.error('Failed to rename the file:', response.statusText);
-            isRenaming = false;
-            throw new Error('Failed to rename the file');
-        }
-    }
-
-    function logout() {
-        localStorage.removeItem(USER_KEY);
-        userInfo.set(null);
-        localStorage.removeItem(TOKEN_KEY);
-        accessToken.set(null);
-    }
-
-    async function getFileDetails() {
-        let currentAccesstoken = get(accessToken);
-        if (!currentAccesstoken) {
-            alert('Login required to Edit file');
-            return;
-        }
-
-        const headers = new Headers({
-            Authorization: `Bearer ${currentAccesstoken.token}`,
-        });
-
-        isLoading = true;
-
-        const contentResponse = await fetch(
-            `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
-            { headers }
-        );
-
-        if (contentResponse.status == 401) {
-            logout();
-            alert('Please login again');
-            return;
-        }
-
-        if (contentResponse.ok) {
-            let fileContentText = await contentResponse.text();
-            content.set(fileContentText);
-            callOutsideOnInternalChange(fileContentText);
-        } else {
-            isLoading = false;
-            let message = await contentResponse.text();
-            console.error(message);
-            alert(
-                'Failed to load this content. Maybe this file was modified by another application'
-            );
-            fileId = null;
-            return;
-        }
-
-        const metadataResponse = await fetch(
-            `https://www.googleapis.com/drive/v3/files/${fileId}?fields=name`,
-            { headers }
-        );
-        if (metadataResponse.ok) {
-            const metadata = await metadataResponse.json();
-            let nameText = metadata.name;
-            if (nameText.endsWith('.md')) {
-                // Remove the last 3 characters (".md") from the string
-                nameText = nameText.slice(0, -3);
-            }
-            filename.set(nameText);
-        } else {
-            console.error('Failed to fetch file metadata');
-        }
-
-        isLoading = false;
-    }
-
-    function handleAccessToken(response) {
-        const tokenInfo = {
-            expires_in: response.expires_in,
-            expires: new Date().getTime() + response.expires_in * 1000,
-            token: response.access_token,
-        };
-        localStorage.setItem(TOKEN_KEY, JSON.stringify(tokenInfo));
-        accessToken.set(tokenInfo);
-        fetchUserProfile(response.access_token);
-    }
-
-    function handleSignIn() {
-        google.accounts.oauth2
-            .initTokenClient({
-                client_id: clientId,
-                scope: 'email profile https://www.googleapis.com/auth/drive.file ',
-                // 'https://www.googleapis.com/auth/drive.metadata ' +
-                // 'https://www.googleapis.com/auth/drive',
-                callback: handleAccessToken,
-            })
-            .requestAccessToken(); // This opens the popup
-    }
-
-    function fetchUserProfile(accessToken) {
-        fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-            headers: {
-                Authorization: `Bearer ${accessToken}`,
-            },
-        })
-            .then((response) => response.json())
-            .then((data) => {
-                localStorage.setItem(USER_KEY, JSON.stringify(data));
-                userInfo.set(data);
-            })
-            .catch((error) => {
-                console.error('Error fetching user information:', error);
-            });
-    }
 
     // Function to fetch and set initial content
     function fetchStorageContent() {
@@ -271,233 +82,9 @@
         callOutsideOnInternalChange &&
             callOutsideOnInternalChange(get(content));
 
-    function openGooglePicker() {
-        let currentAccesstoken = get(accessToken);
-        if (!currentAccesstoken) {
-            alert('Please login to open files from Google Drive');
-            return;
-        }
-
-        // TODO: handle expiry
-
-        // Ensure the Picker API is loaded
-        gapi.load('picker', () => {
-            var view = new google.picker.DocsView(google.picker.ViewId.DOCS)
-                .setQuery('*.md') // Markdown files.
-                .setIncludeFolders(true) // This shows folders in the picker
-                .setMode(google.picker.DocsViewMode.LIST) // Set the view mode to LIST instead of GRID
-                .setOwnedByMe(true) // This limits to files owned by the user.
-                .setSelectFolderEnabled(false); // Set to true if you want users to be able to select folders.
-
-            const picker = new google.picker.PickerBuilder()
-                .addView(view)
-                .setOAuthToken(currentAccesstoken.token)
-                .setDeveloperKey(apiKey)
-                .setCallback(pickerCallback)
-                .setInitialView(view)
-                .setTitle('Select a Quiz file (markdown files end with .md)')
-                .build();
-
-            picker.setVisible(true);
-        });
-    }
-
-    function pickerCallback(data) {
-        if (
-            data[google.picker.Response.ACTION] === google.picker.Action.PICKED
-        ) {
-            const doc = data[google.picker.Response.DOCUMENTS][0];
-            const fileId = doc[google.picker.Document.ID];
-
-            // Update URL with the selected file ID
-            const currentUrl = window.location.href.split('?')[0];
-            const newUrl = `${currentUrl}?gdrive=${fileId}`;
-            window.history.pushState({ path: newUrl }, '', newUrl);
-
-            // Optionally, load or manipulate the selected file using its file ID
-            console.log('Selected file ID: ', fileId);
-            // TODO: reset the state instead of reloading.
-            window.location.reload();
-        }
-    }
-
-    async function createFileInDrive(newWindow = true, callbackFn) {
-        let currentAccesstoken = get(accessToken);
-        if (!currentAccesstoken) {
-            content.set('');
-            callOutsideOnInternalChange('');
-            return;
-        }
-        isRenewing = true;
-        // TODO: Check access token expiry
-        // TODO: Check if curent file is saved, show confirmation.
-        let name = 'Quiz.md';
-
-        const fileMetadata = {
-            name: name,
-            mimeType: 'text/markdown',
-        };
-
-        const response = await fetch(
-            'https://www.googleapis.com/drive/v3/files',
-            {
-                method: 'POST',
-                headers: {
-                    Authorization: `Bearer ${currentAccesstoken.token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(fileMetadata),
-            }
-        );
-
-        isRenewing = false;
-
-        if (response.status === 401) {
-            logout();
-            alert('Please login again');
-            return;
-        } else if (!response.ok) {
-            // Handle other errors
-            throw new Error(
-                `HTTP error! status: ${response.status}, statusText: ${response.statusText}`
-            );
-        }
-
-        const file = await response.json();
-
-        if (file.id) {
-            // Update URL with file ID
-            const currentUrl = window.location.href.split('?')[0];
-            const newUrl = `${currentUrl}?gdrive=${file.id}`;
-
-            if (newWindow) {
-                window.open(newUrl, '_blank');
-            } else {
-                fileId = file.id;
-                filename.set(name);
-                window.history.pushState({ path: newUrl }, '', newUrl);
-            }
-
-            if (callbackFn) {
-                callbackFn(file.id);
-            }
-
-            return file.id; // Return the file ID
-        } else {
-            console.error('Failed to create file in Drive');
-            return null;
-        }
-    }
-
-    async function saveFileToDrive(
-        fileId,
-        accessToken,
-        newContent,
-        callbackOnSaved
-    ) {
-        isSaving = true;
-        const url = `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`;
-
-        const response = await fetch(url, {
-            method: 'PATCH',
-            headers: new Headers({
-                Authorization: `Bearer ${accessToken}`,
-                'Content-Type': 'text/plain', // Adjust based on the file type you're updating
-            }),
-            body: newContent, // The new content of the file
-        });
-
-        if (response.ok) {
-            isSaving = false;
-            const result = await response.json();
-            console.log('File updated successfully:', result);
-            if (callbackOnSaved) {
-                callbackOnSaved(result);
-            }
-            return result;
-        } else {
-            isSaving = false;
-            console.error('Failed to update the file:', response.statusText);
-            throw new Error('Failed to update the file');
-        }
-    }
-
-    function share() {
-        let currentAccesstoken = get(accessToken);
-        if (!currentAccesstoken) {
-            alert('Please login before sharing');
-            return true;
-        }
-        if (!fileId) {
-            alert('Please save before sharing');
-            return true;
-        }
-
-        shareFile(fileId, currentAccesstoken.token, (result) => {
-            const currentUrl = window.location.origin;
-            const newUrl = `${currentUrl}?gdrive=${fileId}`;
-
-            window.open(newUrl, '_blank');
-        });
-    }
-
-    async function shareFile(fileId, accessToken, afterShareFn) {
-        isSharing = true;
-        const url = `https://www.googleapis.com/drive/v3/files/${fileId}/permissions`;
-
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: new Headers({
-                Authorization: `Bearer ${accessToken}`,
-                'Content-Type': 'application/json',
-            }),
-            body: JSON.stringify({
-                role: 'reader',
-                type: 'anyone',
-            }),
-        });
-
-        if (response.ok) {
-            const result = await response.json();
-            console.log('File made public successfully:', result);
-            if (afterShareFn) {
-                afterShareFn(result);
-            }
-            isSharing = false;
-            return result;
-        } else {
-            console.error(
-                'Failed to make the file public:',
-                response.statusText
-            );
-            isSharing = false;
-            throw new Error('Failed to make the file public');
-        }
-    }
-
     export function save() {
-        let currentAccesstoken = get(accessToken);
-        if (!currentAccesstoken) {
-            console.log('Downloading');
-            downloadContent(get(content), 'Quiz.md');
-            return true;
-        }
-
-        if (fileId) {
-            saveFileToDrive(fileId, currentAccesstoken.token, get(content));
-        } else {
-            createFileInDrive(false, (fileId) => {
-                // try saving again.
-                saveFileToDrive(
-                    fileId,
-                    currentAccesstoken.token,
-                    get(content),
-                    (result) => {
-                        sessionStorage.setItem('liveEditorContent', '');
-                    }
-                );
-            });
-        }
+        console.log('Downloading');
+        downloadContent(get(content), 'Quiz.md');
         return true;
     }
 
@@ -526,47 +113,17 @@
     <span
         style="padding-left: 10px; display: inline-flex; align-items: center;"
     >
-        <a href="/">
+        <a href="/quizhub/">
             <Button title="Home">
-                <img src="/icon.svg" alt="quiz home" style="height: 16px;" />
+                <img
+                    src="/quizhub/icon.svg"
+                    alt="quiz home"
+                    style="height: 16px;"
+                />
             </Button>
         </a>
     </span>
-    {#if fileId}
-        <span class="input-container">
-            <input
-                disabled="{isRenaming}"
-                type="text"
-                value="{$filename}"
-                on:input="{handleFilenameChange}"
-            />
-
-            {#if isRenaming}
-                <div class="spinner within-spinner"></div>
-            {/if}
-        </span>
-
-        <!-- <a href="https://drive.google.com/file/d/{fileId}/view" target="_blank">
-            [Drive]
-        </a> -->
-    {/if}
-
     <span style="display: inline-flex;">
-        <span style="position: relative">
-            <Button
-                title="New"
-                buttonAction="{() => {
-                    createFileInDrive(true);
-                }}"
-                disabled="{isRenewing}"
-            >
-                New
-            </Button>
-            {#if isRenewing}
-                <div class="spinner within-spinner"></div>
-            {/if}
-        </span>
-
         <Button
             title="Sample"
             buttonAction="{() => {
@@ -577,51 +134,10 @@
         >
             Sample
         </Button>
-
-        {#if $userInfo}
-            <Button buttonAction="{openGooglePicker}">Open</Button>
-        {/if}
     </span>
 
     <!-- Right sided buttons -->
     <span style="padding-right: 10px; display:inline-flex; gap: 10px;">
-        {#if $userInfo}
-            <span style="position: relative">
-                <Button buttonAction="{save}" disabled="{isSaving}">
-                    Save
-                </Button>
-                {#if isSaving}
-                    <div class="spinner within-spinner"></div>
-                {/if}
-            </span>
-        {/if}
-
-        {#if fileId}
-            <span style="position: relative">
-                <Button buttonAction="{share}" disabled="{isSharing}"
-                    >Share & Launch</Button
-                >
-                {#if isSharing}
-                    <div class="spinner within-spinner"></div>
-                {/if}
-            </span>
-        {/if}
-
-        {#if $userInfo}
-            <Button buttonAction="{logout}">Logout</Button>
-
-            <div class="user-info">
-                <img
-                    class="user-image"
-                    src="{$userInfo.picture}"
-                    alt="{$userInfo.name}"
-                />
-                <span>{$userInfo.name}</span>
-            </div>
-        {:else}
-            <Button buttonAction="{handleSignIn}">Login</Button>
-        {/if}
-
         <div id="signinDiv"></div>
     </span>
 {/if}

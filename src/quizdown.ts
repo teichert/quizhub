@@ -4,7 +4,6 @@ import { Config } from './config.js';
 import marked from './customizedMarked.js';
 import type { Quiz } from './quiz';
 import Toolbar from './Toolbar.svelte';
-import Fetcher from './Fetcher.svelte';
 
 export interface Quizdown {
     register(extension: QuizdownExtension): Quizdown;
@@ -13,7 +12,6 @@ export interface Quizdown {
     init(config: object): void;
     getMarkedParser(): typeof marked;
     createToolbar(node: Element): Toolbar;
-    createFetcher(node: Element): Fetcher;
 }
 
 export interface QuizdownExtension {
@@ -93,23 +91,6 @@ function createToolbar(node: Element): Toolbar {
     return toolbar;
 }
 
-function createFetcher(node: Element): Fetcher {
-    node.innerHTML = '';
-    let root: ShadowRoot;
-    if (!!node.shadowRoot) {
-        //clear root if it allready exists
-        root = node.shadowRoot;
-        root.innerHTML = '';
-    } else {
-        root = node.attachShadow({ mode: 'open' });
-    }
-
-    let fetcher = new Fetcher({
-        target: root,
-        props: {},
-    });
-    return fetcher;
-}
 
 let quizdown: Quizdown = {
     init,
@@ -118,7 +99,7 @@ let quizdown: Quizdown = {
     createApp,
     getMarkedParser,
     createToolbar,
-    createFetcher,
+    // createFetcher,
 };
 
 export default quizdown;
