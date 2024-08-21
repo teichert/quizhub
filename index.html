@@ -1,578 +1,573 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <link rel="manifest" href="manifest.webmanifest" />
 
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width,initial-scale=1" />
-        <meta
-            name="description"
-            content="Make interactive quizzes and share with anyone! Supports Markdown Language, Multiple Choice Questions, Single Choice Questions, Sequence arrangement etc. Latex equations and codeblocks with syntax highlighting"
-        />
-        <link rel="apple-touch-icon" href="/icon.png" />
+<head>
+    <base href="/quizhub/">
+    <link rel="manifest" href="manifest.webmanifest" />
 
-        <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="description"
+        content="Make interactive quizzes and share with anyone! Supports Markdown Language, Multiple Choice Questions, Single Choice Questions, Sequence arrangement etc. Latex equations and codeblocks with syntax highlighting" />
+    <link rel="apple-touch-icon" href="/icon.png" />
 
-        <title>QuizHub</title>
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
 
-        <script src="./build/quizdown.js"></script>
-        <script src="./build/extensions/quizdownKatex.js"></script>
-        <script src="./build/extensions/quizdownHighlight.js"></script>
-        <script>
-            function markdownDownload(url, fn, errorFn) {
-                fetch(url)
-                    .then((response) => {
-                        if (!response.ok) {
-                            throw Error(response.statusText);
-                        }
-                        return response.text();
-                    })
-                    .then((text) => {
-                        fn(text);
-                    })
-                    .catch((error) => {
-                        errorFn(error);
-                    });
-            }
+    <title>QuizHub</title>
 
-            function markdownDownloadGist(url, fn, errorFn) {
-                fetch(url)
-                    .then((response) => {
-                        if (!response.ok) {
-                            throw Error(response.statusText);
-                        }
-                        return response.json();
-                    })
-                    .then((data) => {
-                        const files = data.files;
-                        const fileKeys = Object.keys(files);
-                        if (fileKeys.length === 1) {
-                            // If only one file, use it directly
-                            markdown = files[fileKeys[0]].content;
+    <script src="./build/quizdown.js"></script>
+    <script src="./build/extensions/quizdownKatex.js"></script>
+    <script src="./build/extensions/quizdownHighlight.js"></script>
+    <script>
+        function markdownDownload(url, fn, errorFn) {
+            fetch(url)
+                .then((response) => {
+                    if (!response.ok) {
+                        throw Error(response.statusText);
+                    }
+                    return response.text();
+                })
+                .then((text) => {
+                    fn(text);
+                })
+                .catch((error) => {
+                    errorFn(error);
+                });
+        }
+
+        function markdownDownloadGist(url, fn, errorFn) {
+            fetch(url)
+                .then((response) => {
+                    if (!response.ok) {
+                        throw Error(response.statusText);
+                    }
+                    return response.json();
+                })
+                .then((data) => {
+                    const files = data.files;
+                    const fileKeys = Object.keys(files);
+                    if (fileKeys.length === 1) {
+                        // If only one file, use it directly
+                        markdown = files[fileKeys[0]].content;
+                    } else {
+                        // If multiple files, find the first .md file
+                        const mdFileKey = fileKeys.find((key) =>
+                            files[key].filename
+                                .toLowerCase()
+                                .endsWith('.md')
+                        );
+                        if (mdFileKey) {
+                            markdown = files[mdFileKey].content;
                         } else {
-                            // If multiple files, find the first .md file
-                            const mdFileKey = fileKeys.find((key) =>
-                                files[key].filename
-                                    .toLowerCase()
-                                    .endsWith('.md')
+                            throw new Error(
+                                'Markdown file not found in Gist'
                             );
-                            if (mdFileKey) {
-                                markdown = files[mdFileKey].content;
-                            } else {
-                                throw new Error(
-                                    'Markdown file not found in Gist'
-                                );
-                            }
                         }
-                        let params = {};
-                        if (data['owner']) {
-                            params['authorName'] = data['owner']['login'];
-                            params['authorImageUrl'] =
-                                data['owner']['avatar_url'];
-                            params['authorUrl'] = data['owner']['html_url'];
-                        }
-                        params['description'] = data['description'];
-                        fn(markdown, params);
-                    })
-                    .catch((error) => {
-                        if (errorFn) {
-                            errorFn(error);
-                        } else {
-                            console.error(error);
-                        }
-                    });
-            }
-
-            function init() {
-                // hide all / destroy quiz.
-                const quizContainer = document.getElementById('quizContainer');
-                quizContainer.classList.add('hidden');
-                const helpContainer = document.getElementById('helpContainer');
-                helpContainer.classList.add('hidden');
-                // delete any quiz
-                let quizElement = document.getElementById('quiz');
-                if (quizElement) {
-                    quizElement.remove();
-                }
-
-                // Fetch the markdown content from the provided URL
-                console.log('init');
-                const queryParams = new URLSearchParams(window.location.search);
-                const sourceUrl =
-                    queryParams.get('source') || queryParams.get('s');
-                const gistId = window.location.hash.substring(1);
-                const githubShortcut = queryParams.get('github');
-                const gistShortcut = queryParams.get('gist');
-                const gdrive = queryParams.get('gdrive');
-                let downloadFn = markdownDownload;
-
-                let authorName;
-                let authorUrl;
-                let authorImageUrl;
-
-                let urlToFetch = '';
-                if (gdrive) {
-                    let fetcherElement = document.createElement('span');
-                    urlToFetch = `${gdrive}`;
-                    fetcher = quizdown.createFetcher(fetcherElement);
-                    downloadFn = fetcher.gdriveFetch;
-                }
-                if (gistId) {
-                    // super shortcut. domain.com/#id
-                    urlToFetch = `https://api.github.com/gists/${gistId}`;
-
-                    downloadFn = markdownDownloadGist;
-                } else if (githubShortcut) {
-                    // Construct the GitHub raw content URL from the githubShortcut value
-                    const parts = githubShortcut.split('/');
-                    const username = parts[0];
-                    const projectname = parts[1];
-                    const branchname = parts[2];
-                    const filepath = parts.slice(3).join('/');
-                    urlToFetch = `https://raw.githubusercontent.com/${username}/${projectname}/${branchname}/${filepath}`;
-                } else if (gistShortcut) {
-                    // Construct the Gist raw content URL from the gistShortcut value
-                    const parts = gistShortcut.split('/');
-                    const gistId = parts.pop();
-                    // Gists don't have a branch name or a direct file path in the URL, so use the Gist API URL format
-                    urlToFetch = `https://api.github.com/gists/${gistId}`;
-                    downloadFn = markdownDownloadGist;
-                } else if (sourceUrl) {
-                    // Use the direct URL provided by source or s
-                    urlToFetch = sourceUrl;
-                }
-
-                if (urlToFetch) {
-                    downloadFn(
-                        urlToFetch,
-                        (markdown, params) => {
-                            if (!params) {
-                                params = {};
-                            }
-                            // Inject the markdown into the quiz container
-                            quizContainer.classList.remove('hidden');
-                            const newQuizElement =
-                                document.createElement('div');
-                            newQuizElement.id = 'quiz';
-                            newQuizElement.className = 'quizdown';
-
-                            quizContainer.appendChild(newQuizElement);
-                            let config = {
-                                shuffleAnswers: false,
-                                shuffleQuestions: false,
-                                primaryColor: '#1b73e8',
-                                secondaryColor: '#ffffff',
-                            };
-                            Object.assign(config, params);
-                            quizdown
-                                .register(quizdownKatex)
-                                .register(quizdownHighlight)
-                                .createApp(markdown, newQuizElement, config);
-                        },
-                        (error) => {
-                            // if (error && error.)
-                            console.error({ error });
-                            if (typeof error == 'string') {
-                                document.body.innerText = error;
-                            } else {
-                                document.body.innerText =
-                                    'Some unknown error has ocurred. Please contact the developer.';
-                            }
-                        }
-                    );
-                } else {
-                    const helpContainer =
-                        document.getElementById('helpContainer');
-                    helpContainer.classList.remove('hidden');
-                    const submitButton =
-                        document.getElementById('submitButton');
-
-                    markdownDownload(
-                        '/demo.md',
-                        (markdown, params) => {
-                            if (!markdown) {
-                                return;
-                            }
-                            const quizDemo =
-                                document.getElementById('quizDemo');
-
-                            quizdown
-                                .register(quizdownKatex)
-                                .register(quizdownHighlight)
-                                .createApp(markdown, quizDemo, params);
-                        },
-                        (error) => {
-                            console.error({ error });
-                        }
-                    );
-
-                    // Add click event listener to the button
-                    submitButton.addEventListener('click', function () {
-                        const url = urlInput.value;
-
-                        // Check if URL is not empty
-                        if (url.trim() !== '') {
-                            const githubPattern =
-                                /^https:\/\/github\.com\/([^\/]+)\/([^\/]+)\/blob\/([^\/]+)\/(.+)$/;
-                            const gistPattern =
-                                /^https:\/\/gist\.github\.com\/([^\/]+)\/([0-9a-fA-F]+)$/;
-
-                            const githubMatch = url.match(githubPattern);
-                            const gistMatch = url.match(gistPattern);
-
-                            const newUrl = new URL(window.location.href);
-
-                            if (githubMatch) {
-                                // If it's a GitHub URL, format it accordingly
-                                const [, username, reponame, branch, filepath] =
-                                    githubMatch;
-                                const formattedGithubPath = `${username}/${reponame}/${branch}/${filepath}`;
-                                newUrl.searchParams.set(
-                                    'github',
-                                    formattedGithubPath
-                                );
-                            } else if (gistMatch) {
-                                // If it's a Gist URL, format it accordingly
-                                const [, username, gistId] = gistMatch;
-                                newUrl.searchParams.set('gist', gistId);
-                            } else {
-                                // For non-GitHub URLs, proceed as before
-                                newUrl.searchParams.set('source', url);
-                            }
-
-                            helpContainer.classList.add('hidden');
-                            window.location.href = newUrl.toString();
-                        } else {
-                            console.log('No URL entered');
-                        }
-                    });
-
-                    urlInput.addEventListener('keypress', function (e) {
-                        if (e.key === 'Enter') {
-                            submitButton.click();
-                        }
-                    });
-                }
-            }
-
-            document.addEventListener('DOMContentLoaded', init);
-            window.addEventListener('hashchange', init);
-        </script>
-    </head>
-
-    <style>
-        html {
-            font-family: sans-serif;
+                    }
+                    let params = {};
+                    if (data['owner']) {
+                        params['authorName'] = data['owner']['login'];
+                        params['authorImageUrl'] =
+                            data['owner']['avatar_url'];
+                        params['authorUrl'] = data['owner']['html_url'];
+                    }
+                    params['description'] = data['description'];
+                    fn(markdown, params);
+                })
+                .catch((error) => {
+                    if (errorFn) {
+                        errorFn(error);
+                    } else {
+                        console.error(error);
+                    }
+                });
         }
 
-        html,
-        body,
-        .container {
-            height: 100%;
-            margin: 0;
-            padding: 0;
+        function init() {
+            // hide all / destroy quiz.
+            const quizContainer = document.getElementById('quizContainer');
+            quizContainer.classList.add('hidden');
+            const helpContainer = document.getElementById('helpContainer');
+            helpContainer.classList.add('hidden');
+            // delete any quiz
+            let quizElement = document.getElementById('quiz');
+            if (quizElement) {
+                quizElement.remove();
+            }
+
+            // Fetch the markdown content from the provided URL
+            console.log('init');
+            const queryParams = new URLSearchParams(window.location.search);
+            const sourceUrl =
+                queryParams.get('source') || queryParams.get('s');
+            const gistId = window.location.hash.substring(1);
+            const githubShortcut = queryParams.get('github');
+            const gistShortcut = queryParams.get('gist');
+            const gdrive = queryParams.get('gdrive');
+            let downloadFn = markdownDownload;
+
+            let authorName;
+            let authorUrl;
+            let authorImageUrl;
+
+            let urlToFetch = '';
+            if (gdrive) {
+                let fetcherElement = document.createElement('span');
+                urlToFetch = `${gdrive}`;
+                fetcher = quizdown.createFetcher(fetcherElement);
+                downloadFn = fetcher.gdriveFetch;
+            }
+            if (gistId) {
+                // super shortcut. domain.com/#id
+                urlToFetch = `https://api.github.com/gists/${gistId}`;
+
+                downloadFn = markdownDownloadGist;
+            } else if (githubShortcut) {
+                // Construct the GitHub raw content URL from the githubShortcut value
+                const parts = githubShortcut.split('/');
+                const username = parts[0];
+                const projectname = parts[1];
+                const branchname = parts[2];
+                const filepath = parts.slice(3).join('/');
+                urlToFetch = `https://raw.githubusercontent.com/${username}/${projectname}/${branchname}/${filepath}`;
+            } else if (gistShortcut) {
+                // Construct the Gist raw content URL from the gistShortcut value
+                const parts = gistShortcut.split('/');
+                const gistId = parts.pop();
+                // Gists don't have a branch name or a direct file path in the URL, so use the Gist API URL format
+                urlToFetch = `https://api.github.com/gists/${gistId}`;
+                downloadFn = markdownDownloadGist;
+            } else if (sourceUrl) {
+                // Use the direct URL provided by source or s
+                urlToFetch = sourceUrl;
+            }
+
+            if (urlToFetch) {
+                downloadFn(
+                    urlToFetch,
+                    (markdown, params) => {
+                        if (!params) {
+                            params = {};
+                        }
+                        // Inject the markdown into the quiz container
+                        quizContainer.classList.remove('hidden');
+                        const newQuizElement =
+                            document.createElement('div');
+                        newQuizElement.id = 'quiz';
+                        newQuizElement.className = 'quizdown';
+
+                        quizContainer.appendChild(newQuizElement);
+                        let config = {
+                            shuffleAnswers: false,
+                            shuffleQuestions: false,
+                            primaryColor: '#1b73e8',
+                            secondaryColor: '#ffffff',
+                        };
+                        Object.assign(config, params);
+                        quizdown
+                            .register(quizdownKatex)
+                            .register(quizdownHighlight)
+                            .createApp(markdown, newQuizElement, config);
+                    },
+                    (error) => {
+                        // if (error && error.)
+                        console.error({ error });
+                        if (typeof error == 'string') {
+                            document.body.innerText = error;
+                        } else {
+                            document.body.innerText =
+                                'Some unknown error has ocurred. Please contact the developer.';
+                        }
+                    }
+                );
+            } else {
+                const helpContainer =
+                    document.getElementById('helpContainer');
+                helpContainer.classList.remove('hidden');
+                const submitButton =
+                    document.getElementById('submitButton');
+
+                markdownDownload(
+                    '/demo.md',
+                    (markdown, params) => {
+                        if (!markdown) {
+                            return;
+                        }
+                        const quizDemo =
+                            document.getElementById('quizDemo');
+
+                        quizdown
+                            .register(quizdownKatex)
+                            .register(quizdownHighlight)
+                            .createApp(markdown, quizDemo, params);
+                    },
+                    (error) => {
+                        console.error({ error });
+                    }
+                );
+
+                // Add click event listener to the button
+                submitButton.addEventListener('click', function () {
+                    const url = urlInput.value;
+
+                    // Check if URL is not empty
+                    if (url.trim() !== '') {
+                        const githubPattern =
+                            /^https:\/\/github\.com\/([^\/]+)\/([^\/]+)\/blob\/([^\/]+)\/(.+)$/;
+                        const gistPattern =
+                            /^https:\/\/gist\.github\.com\/([^\/]+)\/([0-9a-fA-F]+)$/;
+
+                        const githubMatch = url.match(githubPattern);
+                        const gistMatch = url.match(gistPattern);
+
+                        const newUrl = new URL(window.location.href);
+
+                        if (githubMatch) {
+                            // If it's a GitHub URL, format it accordingly
+                            const [, username, reponame, branch, filepath] =
+                                githubMatch;
+                            const formattedGithubPath = `${username}/${reponame}/${branch}/${filepath}`;
+                            newUrl.searchParams.set(
+                                'github',
+                                formattedGithubPath
+                            );
+                        } else if (gistMatch) {
+                            // If it's a Gist URL, format it accordingly
+                            const [, username, gistId] = gistMatch;
+                            newUrl.searchParams.set('gist', gistId);
+                        } else {
+                            // For non-GitHub URLs, proceed as before
+                            newUrl.searchParams.set('source', url);
+                        }
+
+                        helpContainer.classList.add('hidden');
+                        window.location.href = newUrl.toString();
+                    } else {
+                        console.log('No URL entered');
+                    }
+                });
+
+                urlInput.addEventListener('keypress', function (e) {
+                    if (e.key === 'Enter') {
+                        submitButton.click();
+                    }
+                });
+            }
         }
 
+        document.addEventListener('DOMContentLoaded', init);
+        window.addEventListener('hashchange', init);
+    </script>
+</head>
+
+<style>
+    html {
+        font-family: sans-serif;
+    }
+
+    html,
+    body,
+    .container {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        font-size: 1.1em;
+        line-height: 1.5;
+    }
+
+    h1 {
+        font-weight: normal;
+    }
+
+    .quizdown {
+        height: 100%;
+    }
+
+    #quizContainer {
+        overflow: hidden;
+    }
+
+    #help {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        max-width: 600px;
+        padding: 20px;
+        margin: auto;
+        gap: 20px;
+    }
+
+    .hidden {
+        display: none !important;
+    }
+
+    .url-input {
+        padding: 10px;
+        width: 100%;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+    }
+
+    a:link,
+    a:visited {
+        color: #1b73e8;
+    }
+
+    a.submit-button,
+    .submit-button {
+        text-decoration: none;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        background-color: #1b73e8;
+        color: white;
+        font-weight: bold;
+    }
+
+    .submit-button:hover,
+    .submit-button:focus,
+    .submit-button:active {
+        background-color: #185abc;
+    }
+
+    /* Smaller screens */
+    @media (max-width: 600px) {
         body {
-            font-size: 1.1em;
-            line-height: 1.5;
+            margin: 0px;
         }
+    }
 
-        h1 {
-            font-weight: normal;
-        }
+    table {
+        text-align: center;
+        width: 100%;
+    }
 
-        .quizdown {
-            height: 100%;
-        }
+    table,
+    tbody,
+    th,
+    td,
+    tr {
+        border-collapse: collapse;
+        margin: 10px;
+        padding: 5px;
+    }
 
-        #quizContainer {
+    tr:nth-child(odd) {
+        background-color: #f2f2f2;
+    }
+
+    #quizDemo {
+        box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+        width: 100%;
+        border-radius: 5px;
+        min-height: 480px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .logo {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        justify-content: center;
+        text-decoration: none;
+        color: #1b73e8;
+    }
+
+    #forkongithub a {
+        padding: 0px;
+        display: inline-flex;
+        width: 100%;
+        justify-content: center;
+
+        background: white;
+        color: #000;
+        text-decoration: none;
+        font-family: arial, sans-serif;
+        text-align: center;
+        font-weight: bold;
+        font-size: 0.8rem;
+        line-height: 1rem;
+        position: relative;
+        transition: 0.5s;
+    }
+
+    #forkongithub a:hover {
+        background: #1b73e8;
+        color: #fff;
+    }
+
+    #forkongithub a::before,
+    #forkongithub a::after {
+        content: '';
+        width: 100%;
+        display: block;
+        position: absolute;
+        top: 1px;
+        left: 0;
+        height: 1px;
+        background: #fff;
+    }
+
+    #forkongithub a::after {
+        bottom: 1px;
+        top: auto;
+    }
+
+    @media screen and (min-width: 800px) {
+        #forkongithub {
+            position: absolute;
+            display: block;
+            top: 0;
+            right: 0;
+            width: 200px;
             overflow: hidden;
-        }
-
-        #help {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            max-width: 600px;
-            padding: 20px;
-            margin: auto;
-            gap: 20px;
-        }
-        .hidden {
-            display: none !important;
-        }
-
-        .url-input {
-            padding: 10px;
-            width: 100%;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-        }
-
-        a:link,
-        a:visited {
-            color: #1b73e8;
-        }
-
-        a.submit-button,
-        .submit-button {
-            text-decoration: none;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            background-color: #1b73e8;
-            color: white;
-            font-weight: bold;
-        }
-        .submit-button:hover,
-        .submit-button:focus,
-        .submit-button:active {
-            background-color: #185abc;
-        }
-
-        /* Smaller screens */
-        @media (max-width: 600px) {
-            body {
-                margin: 0px;
-            }
-        }
-
-        table {
-            text-align: center;
-            width: 100%;
-        }
-
-        table,
-        tbody,
-        th,
-        td,
-        tr {
-            border-collapse: collapse;
-            margin: 10px;
-            padding: 5px;
-        }
-        tr:nth-child(odd) {
-            background-color: #f2f2f2;
-        }
-
-        #quizDemo {
-            box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
-            width: 100%;
-            border-radius: 5px;
-            min-height: 480px;
-            display: flex;
-            flex-direction: column;
-        }
-        .logo {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            width: 100%;
-            justify-content: center;
-            text-decoration: none;
-            color: #1b73e8;
+            height: 200px;
+            z-index: 9999;
+            padding: 0px;
         }
 
         #forkongithub a {
-            padding: 0px;
-            display: inline-flex;
-            width: 100%;
-            justify-content: center;
+            padding: 5px 40px;
 
-            background: white;
-            color: #000;
-            text-decoration: none;
-            font-family: arial, sans-serif;
-            text-align: center;
-            font-weight: bold;
-            font-size: 0.8rem;
-            line-height: 1rem;
-            position: relative;
-            transition: 0.5s;
-        }
-        #forkongithub a:hover {
-            background: #1b73e8;
-            color: #fff;
-        }
-        #forkongithub a::before,
-        #forkongithub a::after {
-            content: '';
-            width: 100%;
-            display: block;
+            width: 200px;
             position: absolute;
-            top: 1px;
-            left: 0;
-            height: 1px;
-            background: #fff;
+            top: 40px;
+            right: -80px;
+            transform: rotate(45deg);
+            -webkit-transform: rotate(45deg);
+            -ms-transform: rotate(45deg);
+            -moz-transform: rotate(45deg);
+            -o-transform: rotate(45deg);
+            box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.2);
         }
-        #forkongithub a::after {
-            bottom: 1px;
-            top: auto;
-        }
-        @media screen and (min-width: 800px) {
-            #forkongithub {
-                position: absolute;
-                display: block;
-                top: 0;
-                right: 0;
-                width: 200px;
-                overflow: hidden;
-                height: 200px;
-                z-index: 9999;
-                padding: 0px;
-            }
-            #forkongithub a {
-                padding: 5px 40px;
+    }
+</style>
 
-                width: 200px;
-                position: absolute;
-                top: 40px;
-                right: -80px;
-                transform: rotate(45deg);
-                -webkit-transform: rotate(45deg);
-                -ms-transform: rotate(45deg);
-                -moz-transform: rotate(45deg);
-                -o-transform: rotate(45deg);
-                box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.2);
-            }
-        }
-    </style>
+<body>
+    <div class="container hidden" id="quizContainer"></div>
+    <div class="container hidden" id="helpContainer">
+        <!-- <span id="forkongithub"><a href="https://github.com/varun-seth/quizhub.in">GitHub</a></span> -->
+        <div id="help">
+            <!-- <div>
+                <a href="https://quizhub.in" class="logo">
+                    <img src="/icon.svg" style="height: 32px" />
+                    <h1>QuizHub.in</h1>
+                </a>
+            </div> -->
 
-    <body>
-        <div class="container hidden" id="quizContainer"></div>
-        <div class="container hidden" id="helpContainer">
-            <span id="forkongithub"
-                ><a href="https://github.com/varun-seth/quizhub.in"
-                    >GitHub</a
-                ></span
-            >
-            <div id="help">
-                <div>
-                    <a href="https://quizhub.in" class="logo">
-                        <img src="/icon.svg" style="height: 32px" />
-                        <h1>QuizHub.in</h1>
-                    </a>
+            <div style="max-width: 500px">
+                <div style="font-weight: 400; font-size: 1.8rem">
+                    Create quizzes and share with anyone!
                 </div>
+                <p style="color: #5f6368; font-size: 1rem">
+                    Latex equations and code-blocks with syntax
+                    highlighting.
+                </p>
+            </div>
 
-                <div style="max-width: 500px">
-                    <div style="font-weight: 400; font-size: 1.8rem">
-                        Create quizzes and share with anyone!
-                    </div>
-                    <p style="color: #5f6368; font-size: 1rem">
-                        Latex equations and code-blocks with syntax
-                        highlighting.
-                    </p>
-                </div>
-
-                <a href="/edit/" class="submit-button">
-                    <div
-                        style="
+            <a href="/edit/" class="submit-button">
+                <div style="
                             font-weight: 400;
                             font-size: 1.5em;
                             padding: 10px;
-                        "
-                    >
-                        Try QuizHub Editor
-                    </div>
-                </a>
+                        ">
+                    Try QuizHub Editor
+                </div>
+            </a>
 
-                <br />
+            <br />
 
-                <div id="quizDemo"></div>
+            <div id="quizDemo"></div>
 
-                <br />
-                Following are some sample markdown files and their output
-                quizzes.
-                <table>
-                    <tr>
-                        <th>Sample File</th>
-                        <th>Output Quiz</th>
-                    </tr>
-                    <tr>
-                        <td>
-                            <a href="/edit/?s=/basics.md">basics.md</a>
-                        </td>
-                        <td>
-                            <a href="/?s=basics.md">Basic Quiz</a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <a href="/edit/?s=/maths.md">maths.md</a>
-                        </td>
-                        <td>
-                            <a href="/?s=maths.md">Maths Quiz</a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <a href="/edit/?s=/python.md">python.md</a>
-                        </td>
-                        <td>
-                            <a href="/?s=python.md">Python Quiz</a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <a href="/edit/?s=/hindi.md">hindi.md</a>
-                        </td>
-                        <td>
-                            <a href="/?s=hindi.md">Hindi</a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <a href="/edit/?s=/sample.md">sample.md</a>
-                        </td>
-                        <td>
-                            <a href="/?s=sample.md">Sample Quiz</a>
-                        </td>
-                    </tr>
-                </table>
+            <br />
+            Following are some sample markdown files and their output
+            quizzes.
+            <table>
+                <tr>
+                    <th>Sample File</th>
+                    <th>Output Quiz</th>
+                </tr>
+                <tr>
+                    <td>
+                        <a href="/edit/?s=/basics.md">basics.md</a>
+                    </td>
+                    <td>
+                        <a href="/?s=basics.md">Basic Quiz</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <a href="/edit/?s=/maths.md">maths.md</a>
+                    </td>
+                    <td>
+                        <a href="/?s=maths.md">Maths Quiz</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <a href="/edit/?s=/python.md">python.md</a>
+                    </td>
+                    <td>
+                        <a href="/?s=python.md">Python Quiz</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <a href="/edit/?s=/hindi.md">hindi.md</a>
+                    </td>
+                    <td>
+                        <a href="/?s=hindi.md">Hindi</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <a href="/edit/?s=/sample.md">sample.md</a>
+                    </td>
+                    <td>
+                        <a href="/?s=sample.md">Sample Quiz</a>
+                    </td>
+                </tr>
+            </table>
 
-                <br />
+            <br />
 
-                <span>
-                    You can also load a quiz using the URL of your existing
-                    markdown file. For example: Try copy-pasting
-                    <a
-                        onclick="document.getElementById('urlInput').value = 'https://gist.github.com/varun-seth/7d273c464beac64c7ace9493c91301f5'; return false;"
-                        href="https://gist.github.com/varun-seth/7d273c464beac64c7ace9493c91301f5"
-                        >this link</a
-                    >
-                </span>
-                <br />
+            <span>
+                You can also load a quiz using the URL of your existing
+                markdown file. For example: Try copy-pasting
+                <a onclick="document.getElementById('urlInput').value = 'https://gist.github.com/varun-seth/7d273c464beac64c7ace9493c91301f5'; return false;"
+                    href="https://gist.github.com/varun-seth/7d273c464beac64c7ace9493c91301f5">this link</a>
+            </span>
+            <br />
 
-                <div
-                    style="
+            <div style="
                         display: flex;
                         width: 100%;
                         align-items: center;
                         max-width: 480px;
-                    "
-                >
-                    <input
-                        class="url-input"
-                        type="text"
-                        placeholder="Enter the URL of a markdown file that contains the quiz."
-                        id="urlInput"
-                    />
-                    <button class="submit-button" id="submitButton">GO</button>
-                </div>
-
-                Native github and gist urls are supported. The github repository
-                must be public. But the gist can be hidden.
-
-                <br />
-
-                <div style="text-align: center">
-                    <a href="/privacy.html"> Privacy Policy </a>
-                    &nbsp;
-                    <a href="/terms.html"> Terms Of Service </a>
-                </div>
+                    ">
+                <input class="url-input" type="text"
+                    placeholder="Enter the URL of a markdown file that contains the quiz." id="urlInput" />
+                <button class="submit-button" id="submitButton">GO</button>
             </div>
+
+            Native github and gist urls are supported. The github repository
+            must be public. But the gist can be hidden.
+
+            <br />
+
+            <!-- <div style="text-align: center">
+                <a href="/privacy.html"> Privacy Policy </a>
+                &nbsp;
+                <a href="/terms.html"> Terms Of Service </a>
+            </div> -->
         </div>
-    </body>
+    </div>
+</body>
+
 </html>
