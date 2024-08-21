@@ -349,6 +349,11 @@ export class Quiz {
         return total;
     }
 
+    upperBoundTotalAllottedMinutes(): number {
+        const add = (a: number, b: number): number => a + b;
+        return Math.ceil(this.questions.map(q => q.allottedTimeMilliSeconds).reduce(add, 0) / 1000 / 60);
+    }
+
     evaluate(): number {
         let points = 0;
         for (var q of this.questions) {

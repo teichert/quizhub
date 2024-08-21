@@ -14,6 +14,12 @@ import {
 import { Config, mergeAttributes, standardizeNames } from './config';
 import marked from './customizedMarked';
 
+function updateTimeAndPoints(config: Config, tokens: marked.Token[]): Config {
+    config.timeForQuestion = findLastDirectiveValue(tokens, "time", config.timeForQuestion);
+    config.pointsForQuestion = findLastDirectiveValue(tokens, "points", config.pointsForQuestion);
+    return config;
+}
+
 function parseQuizdown(rawQuizdown: string, globalConfig: Config): Quiz {
     let tokens = tokenize(rawQuizdown);
 
@@ -42,6 +48,7 @@ function parseQuizdown(rawQuizdown: string, globalConfig: Config): Quiz {
         quizConfig.activeQuestion = activeQuestion;
     }
 
+    quizConfig = updateTimeAndPoints(quizConfig, tokens.slice(0, firstQuestionIdx));
     let questions = extractQuestions(
         tokens.slice(firstQuestionIdx),
         quizConfig
@@ -145,6 +152,12 @@ function parseOptions(tokens: marked.Token[], quizConfig: Config): Config {
     return mergeAttributes(quizConfig, data);
 }
 
+function findLastDirectiveValue(tokens: marked.Token[], type: string, defaultValue: number) {
+    const last = tokens.findLast((t) => t.type == type);
+    if (last === undefined) return defaultValue;
+    else return last["value"];
+}
+
 function extractQuestions(
     tokens: marked.Token[],
     config: Config
@@ -154,17 +167,13 @@ function extractQuestions(
 
     while (startIdx < tokens.length) {
         let nextQuestionIdx = findNextHeadingIdx(tokens, startIdx + 1);
-
         if (nextQuestionIdx == -1) {
             nextQuestionIdx = tokens.length;
         }
 
         let currentTokens = tokens.slice(startIdx, nextQuestionIdx);
         let questionType = determineQuestionType(currentTokens);
-        const timeHeading = parseTime(currentTokens);
-        const pointsHeading = parsePoints(currentTokens);
-        config.timeForQuestion = timeHeading || config.timeForQuestion;
-        config.pointsForQuestion = pointsHeading || config.pointsForQuestion;
+
         if (questionType != 'InvalidQuestion') {
             let question = parseQuestion(questionType, currentTokens, config);
             questions.push(question);
@@ -177,6 +186,7 @@ function extractQuestions(
             }
         }
         startIdx = nextQuestionIdx; // Move start index forward to the next question's start or to the end of the array
+        config = updateTimeAndPoints(config, currentTokens);
     }
     return questions;
 }
@@ -207,25 +217,9 @@ function parseQuestion(
 }
 
 function parseHint(tokens: marked.Token[]): string {
-    let blockquotes = tokens.filter((token) => token['type'] == 'blockquote' && !parseTime([token]) && !parsePoints([token]));
+    let blockquotes = tokens.filter((token) => token['type'] == 'blockquote');
     return parseTokens(blockquotes);
 }
-
-function directiveParser(key: string): (tokens: marked.Token[]) => number {
-    const pattern = new RegExp("^\\s*" + key + ":\\s*(\\d+\\.?\\d*)", "i");
-    return (tokens: marked.Token[]): number => {
-        for (const token of tokens) {
-            if (token.type == 'blockquote') {
-                const matched = token.text.match(pattern);
-                if (matched) return Number(matched[1]);
-            }
-        }
-        return null;
-    }
-}
-
-const parseTime = directiveParser("time");
-const parsePoints = directiveParser("points");
 
 function parseExplanation(tokens: marked.Token[]): string {
     let explanations = tokens.filter(
@@ -257,7 +251,7 @@ function parseAnswers(tokens: marked.Token[]): Array<Answer> {
 }
 
 function parseAnswer(item: marked.Tokens.ListItem) {
-    let comments = item['tokens'].filter((token) => token.type == 'blockquote' && !parseTime([token]) && !parsePoints([token]));
+    let comments = item['tokens'].filter((token) => token.type == 'blockquote');
     let texts = item['tokens'].filter((token) => token.type != 'blockquote');
     return { text: parseTokens(texts), comment: parseTokens(comments) };
 }

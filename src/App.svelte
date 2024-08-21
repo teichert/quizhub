@@ -35,6 +35,7 @@
     $: allVisited = quiz.allVisited;
 
     let maxScore: number;
+    let totalAllottedMinutes: number;
 
     // idea from https://svelte.dev/examples/7guis-timer
     let last_time = window.performance.now();
@@ -60,6 +61,7 @@
 
     beforeUpdate(() => {
         maxScore = quiz.maxScoreTotal();
+        totalAllottedMinutes = quiz.upperBoundTotalAllottedMinutes();
     });
 
     //let game = new Linear(quiz);
@@ -114,9 +116,11 @@
                 {/if}
             </span>
             <div>
-                {$_('count')}: {quiz.questions.length}
+                {$_('Count')}: {quiz.questions.length}
                 <br />
-                {$_('points')}: {maxScore}
+                {$_('Points')}: {maxScore}
+                <br />
+                {$_('Allotted Minutes')}: &leq; {totalAllottedMinutes}
             </div>
 
             {#if quiz.config.authorName}

@@ -1,8 +1,5 @@
-
-> points: 10
-
-> time: 20
-
+time: 20
+points: 1000
 ## What does the following code output?
 
 ```python
