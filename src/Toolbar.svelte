@@ -4,10 +4,11 @@
     import defaultText from './toolbarDefaultText';
     import { writable, get } from 'svelte/store';
     import { onMount } from 'svelte';
+    import { text } from 'svelte/internal';
 
     let fileId = null;
     let filename = writable('');
-
+    
     let isRenewing = false;
     let isLoading = false;
 
@@ -33,14 +34,19 @@
         const queryParams = new URLSearchParams(window.location.search);
 
         const sourceUrl = queryParams.get('source') || queryParams.get('s');
+        const encodedText = queryParams.get('text') || queryParams.get('t');
         if (sourceUrl) {
             markdownDownload(sourceUrl, (text) => {
                 content.set(text);
                 callOutsideOnInternalChange(text);
             });
             return;
+        } else if (encodedText) {
+            const text = decodeURIComponent(encodedText);
+            content.set(text);
+            callOutsideOnInternalChange(text);
+            return;
         }
-
         fetchStorageContent();
     });
 
