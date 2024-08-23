@@ -6,6 +6,7 @@
     "type": "module",
     "scripts": {
         "build": "rollup -c",
+        "dev": "dotenv -e .env -- rollup -wc",
         "start": "npx ws -p 5600 -r '/quizhub/(.*)->/$1' -d public --hostname localhost",
         "validate": "svelte-check",
         "deploy": "gh-pages -d public"

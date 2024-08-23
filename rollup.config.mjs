@@ -9,6 +9,7 @@ import analyze from 'rollup-plugin-analyzer';
 import versionInjector from 'rollup-plugin-version-injector';
 import json from '@rollup/plugin-json';
 import replace from '@rollup/plugin-replace';
+import child_process from 'child_process';
 
 const production = !process.env.ROLLUP_WATCH;
 
@@ -22,9 +23,9 @@ function serve() {
     return {
         writeBundle() {
             if (server) return;
-            server = require('child_process').spawn(
+            server = child_process.spawn(
                 'npm',
-                ['run', 'start', '--', '--dev'],
+                ['run', 'start'],
                 {
                     stdio: ['ignore', 'inherit', 'inherit'],
                     shell: true,
