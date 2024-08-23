@@ -89,7 +89,7 @@
         callOutsideOnInternalChange &&
             callOutsideOnInternalChange(get(content));
 
-    export function save() {
+    function generateEditQuizURL() {
         const rawContent = get(content);
         const encodedContent = btoa(rawContent);
         // const encodedContent = encodeURIComponent(rawContent);
@@ -98,8 +98,16 @@
             window.location.href.replace(currentSearch, '') +
             '?t=' +
             encodedContent;
+        return newLocation;
+    }
 
-        history.pushState({}, null, newLocation);
+    export function save(run = false) {
+        const editQuizURL = generateEditQuizURL();
+        history.pushState({}, null, editQuizURL);
+        if (run) {
+            const runnableQuizLink = editQuizURL.replace('/edit', '');
+            history.pushState({}, null, runnableQuizLink);
+        }
     }
 
     function download() {
@@ -146,6 +154,7 @@
     <span style="display: inline-flex;">
         <Button title="Save (in url)" buttonAction="{save}">Save</Button>
         <Button title="Download" buttonAction="{download}">Download</Button>
+        <Button title="Run" buttonAction="{() => save(true)}">Run</Button>
         <Button
             title="Sample"
             buttonAction="{() => {
