@@ -8,7 +8,7 @@
 
     let fileId = null;
     let filename = writable('');
-    
+
     let isRenewing = false;
     let isLoading = false;
 
@@ -42,7 +42,8 @@
             });
             return;
         } else if (encodedText) {
-            const text = decodeURIComponent(encodedText);
+            const text = atob(encodedText);
+            // const text = decodeURIComponent(encodedText);
             content.set(text);
             callOutsideOnInternalChange(text);
             return;
@@ -89,16 +90,29 @@
             callOutsideOnInternalChange(get(content));
 
     export function save() {
+        const rawContent = get(content);
+        const encodedContent = btoa(rawContent);
+        // const encodedContent = encodeURIComponent(rawContent);
+        const currentSearch = window.location.search;
+        const newLocation =
+            window.location.href.replace(currentSearch, '') +
+            '?t=' +
+            encodedContent;
+
+        history.pushState({}, null, newLocation);
+    }
+
+    function download() {
         console.log('Downloading');
         downloadContent(get(content), 'Quiz.md');
-        return true;
     }
 
     function downloadContent(content, filename) {
+        const encodedContent = encodeURIComponent(content);
         let element = document.createElement('a');
         element.setAttribute(
             'href',
-            'data:text/plain;charset=utf-8,' + encodeURIComponent(content)
+            'data:text/plain;charset=utf-8,' + encodedContent
         );
         element.setAttribute('download', filename);
 
@@ -130,6 +144,8 @@
         </a>
     </span>
     <span style="display: inline-flex;">
+        <Button title="Save (in url)" buttonAction="{save}">Save</Button>
+        <Button title="Download" buttonAction="{download}">Download</Button>
         <Button
             title="Sample"
             buttonAction="{() => {

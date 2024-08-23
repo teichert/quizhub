@@ -104,6 +104,8 @@
             const githubShortcut = queryParams.get('github');
             const gistShortcut = queryParams.get('gist');
             const gdrive = queryParams.get('gdrive');
+            const encodedText = queryParams.get('text') || queryParams.get('t');
+
             let downloadFn = markdownDownload;
 
             let authorName;
@@ -111,13 +113,13 @@
             let authorImageUrl;
 
             let urlToFetch = '';
+
             if (gdrive) {
                 let fetcherElement = document.createElement('span');
                 urlToFetch = `${gdrive}`;
                 fetcher = quizdown.createFetcher(fetcherElement);
                 downloadFn = fetcher.gdriveFetch;
-            }
-            if (gistId) {
+            } else if (gistId) {
                 // super shortcut. domain.com/#id
                 urlToFetch = `https://api.github.com/gists/${gistId}`;
 
@@ -141,34 +143,37 @@
                 // Use the direct URL provided by source or s
                 urlToFetch = sourceUrl;
             }
+            function handleMarkdown(markdown, params) {
+                if (!params) {
+                    params = {};
+                }
+                // Inject the markdown into the quiz container
+                quizContainer.classList.remove('hidden');
+                const newQuizElement =
+                    document.createElement('div');
+                newQuizElement.id = 'quiz';
+                newQuizElement.className = 'quizdown';
 
-            if (urlToFetch) {
+                quizContainer.appendChild(newQuizElement);
+                let config = {
+                    shuffleAnswers: false,
+                    shuffleQuestions: false,
+                    primaryColor: '#1b73e8',
+                    secondaryColor: '#ffffff',
+                };
+                Object.assign(config, params);
+                quizdown
+                    .register(quizdownKatex)
+                    .register(quizdownHighlight)
+                    .createApp(markdown, newQuizElement, config);
+            }
+
+            if (encodedText) {
+                handleMarkdown(atob(encodedText), {});
+            } else if (urlToFetch) {
                 downloadFn(
                     urlToFetch,
-                    (markdown, params) => {
-                        if (!params) {
-                            params = {};
-                        }
-                        // Inject the markdown into the quiz container
-                        quizContainer.classList.remove('hidden');
-                        const newQuizElement =
-                            document.createElement('div');
-                        newQuizElement.id = 'quiz';
-                        newQuizElement.className = 'quizdown';
-
-                        quizContainer.appendChild(newQuizElement);
-                        let config = {
-                            shuffleAnswers: false,
-                            shuffleQuestions: false,
-                            primaryColor: '#1b73e8',
-                            secondaryColor: '#ffffff',
-                        };
-                        Object.assign(config, params);
-                        quizdown
-                            .register(quizdownKatex)
-                            .register(quizdownHighlight)
-                            .createApp(markdown, newQuizElement, config);
-                    },
+                    handleMarkdown,
                     (error) => {
                         // if (error && error.)
                         console.error({ error });
