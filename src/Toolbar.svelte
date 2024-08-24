@@ -101,13 +101,18 @@
         return newLocation;
     }
 
-    export function save(run = false) {
+    function openRunQuizLink() {
+        const toAdd = document.createElement('a');
+        toAdd.setAttribute('href', generateEditQuizURL().replace('/edit', ''));
+        toAdd.setAttribute('target', 'runQuizhub');
+        document.body.appendChild(toAdd);
+        toAdd.click();
+        document.body.removeChild(toAdd);
+    }
+
+    export function save() {
         const editQuizURL = generateEditQuizURL();
         history.pushState({}, null, editQuizURL);
-        if (run) {
-            const runnableQuizLink = editQuizURL.replace('/edit', '');
-            history.pushState({}, null, runnableQuizLink);
-        }
     }
 
     function download() {
@@ -154,7 +159,7 @@
     <span style="display: inline-flex;">
         <Button title="Save (in url)" buttonAction="{save}">Save</Button>
         <Button title="Download" buttonAction="{download}">Download</Button>
-        <Button title="Run" buttonAction="{() => save(true)}">Run</Button>
+        <Button title="Run" buttonAction="{openRunQuizLink}">Run</Button>
         <Button
             title="Sample"
             buttonAction="{() => {
