@@ -35,54 +35,6 @@
                 });
         }
 
-        function markdownDownloadGist(url, fn, errorFn) {
-            fetch(url)
-                .then((response) => {
-                    if (!response.ok) {
-                        throw Error(response.statusText);
-                    }
-                    return response.json();
-                })
-                .then((data) => {
-                    const files = data.files;
-                    const fileKeys = Object.keys(files);
-                    if (fileKeys.length === 1) {
-                        // If only one file, use it directly
-                        markdown = files[fileKeys[0]].content;
-                    } else {
-                        // If multiple files, find the first .md file
-                        const mdFileKey = fileKeys.find((key) =>
-                            files[key].filename
-                                .toLowerCase()
-                                .endsWith('.md')
-                        );
-                        if (mdFileKey) {
-                            markdown = files[mdFileKey].content;
-                        } else {
-                            throw new Error(
-                                'Markdown file not found in Gist'
-                            );
-                        }
-                    }
-                    let params = {};
-                    if (data['owner']) {
-                        params['authorName'] = data['owner']['login'];
-                        params['authorImageUrl'] =
-                            data['owner']['avatar_url'];
-                        params['authorUrl'] = data['owner']['html_url'];
-                    }
-                    params['description'] = data['description'];
-                    fn(markdown, params);
-                })
-                .catch((error) => {
-                    if (errorFn) {
-                        errorFn(error);
-                    } else {
-                        console.error(error);
-                    }
-                });
-        }
-
         function init() {
             // hide all / destroy quiz.
             const quizContainer = document.getElementById('quizContainer');
@@ -100,10 +52,6 @@
             const queryParams = new URLSearchParams(window.location.search);
             const sourceUrl =
                 queryParams.get('source') || queryParams.get('s');
-            const gistId = window.location.hash.substring(1);
-            const githubShortcut = queryParams.get('github');
-            const gistShortcut = queryParams.get('gist');
-            const gdrive = queryParams.get('gdrive');
             const encodedText = queryParams.get('text') || queryParams.get('t');
 
             let downloadFn = markdownDownload;
@@ -114,32 +62,7 @@
 
             let urlToFetch = '';
 
-            if (gdrive) {
-                let fetcherElement = document.createElement('span');
-                urlToFetch = `${gdrive}`;
-                fetcher = quizdown.createFetcher(fetcherElement);
-                downloadFn = fetcher.gdriveFetch;
-            } else if (gistId) {
-                // super shortcut. domain.com/#id
-                urlToFetch = `https://api.github.com/gists/${gistId}`;
-
-                downloadFn = markdownDownloadGist;
-            } else if (githubShortcut) {
-                // Construct the GitHub raw content URL from the githubShortcut value
-                const parts = githubShortcut.split('/');
-                const username = parts[0];
-                const projectname = parts[1];
-                const branchname = parts[2];
-                const filepath = parts.slice(3).join('/');
-                urlToFetch = `https://raw.githubusercontent.com/${username}/${projectname}/${branchname}/${filepath}`;
-            } else if (gistShortcut) {
-                // Construct the Gist raw content URL from the gistShortcut value
-                const parts = gistShortcut.split('/');
-                const gistId = parts.pop();
-                // Gists don't have a branch name or a direct file path in the URL, so use the Gist API URL format
-                urlToFetch = `https://api.github.com/gists/${gistId}`;
-                downloadFn = markdownDownloadGist;
-            } else if (sourceUrl) {
+            if (sourceUrl) {
                 // Use the direct URL provided by source or s
                 urlToFetch = sourceUrl;
             }
@@ -217,34 +140,9 @@
 
                     // Check if URL is not empty
                     if (url.trim() !== '') {
-                        const githubPattern =
-                            /^https:\/\/github\.com\/([^\/]+)\/([^\/]+)\/blob\/([^\/]+)\/(.+)$/;
-                        const gistPattern =
-                            /^https:\/\/gist\.github\.com\/([^\/]+)\/([0-9a-fA-F]+)$/;
-
-                        const githubMatch = url.match(githubPattern);
-                        const gistMatch = url.match(gistPattern);
-
                         const newUrl = new URL(window.location.href);
-
-                        if (githubMatch) {
-                            // If it's a GitHub URL, format it accordingly
-                            const [, username, reponame, branch, filepath] =
-                                githubMatch;
-                            const formattedGithubPath = `${username}/${reponame}/${branch}/${filepath}`;
-                            newUrl.searchParams.set(
-                                'github',
-                                formattedGithubPath
-                            );
-                        } else if (gistMatch) {
-                            // If it's a Gist URL, format it accordingly
-                            const [, username, gistId] = gistMatch;
-                            newUrl.searchParams.set('gist', gistId);
-                        } else {
-                            // For non-GitHub URLs, proceed as before
-                            newUrl.searchParams.set('source', url);
-                        }
-
+                        // For non-GitHub URLs, proceed as before
+                        newUrl.searchParams.set('source', url);
                         helpContainer.classList.add('hidden');
                         window.location.href = newUrl.toString();
                     } else {
@@ -504,6 +402,18 @@
                     </td>
                     <td>
                         <a href="/quizhub/?s=/quizhub/python.md">python quiz</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <a
+                            href="/quizhub/edit/?t=dGltZTogMjANCnBvaW50czogMTAwMA0KIyMgV2hhdCBkb2VzIHRoZSBmb2xsb3dpbmcgY29kZSBvdXRwdXQ/DQoNCmBgYHB5dGhvbg0KcHJpbnQoIlB5dGhvbiEiWzFdKQ0KYGBgDQoNCjEuIFsgXSBQDQoyLiBbeF0geQ0KMy4gWyBdIHQNCjQuIFsgXSBoDQo1LiBbIF0gbw0KNi4gWyBdIG4NCg0KDQojIyBXaGF0IGlzIHRoZSByZXN1bHQgb2YgdGhlIGZvbGxvd2luZyBvcGVyYXRpb24/DQoNCmBgYHB5dGhvbg0KYSA9IDEwDQpiID0gMw0KcHJpbnQoYSAlIGIpDQpgYGANCg0KMS4gWyBdIDANCjIuIFt4XSAxDQozLiBbIF0gMg0KNC4gWyBdIDMNCjUuIFsgXSBlcnJvcg0KDQoNCiMjIFdoYXQgd2lsbCBiZSB0aGUgb3V0cHV0IG9mIHRoaXMgY29kZT8NCg0KYGBgcHl0aG9uDQpudW1iZXJzID0gWzEsIDIsIDMsIDQsIDVdDQpwcmludChudW1iZXJzWy0yXSkNCmBgYA0KDQoxLiBbIF0gMQ0KMi4gWyBdIDINCjMuIFsgXSAzDQo0LiBbeF0gNA0KNS4gWyBdIDUNCg0KDQojIyBXaGF0IGRvZXMgdGhlIGZvbGxvd2luZyBjb2RlIHJldHVybj8NCg0KYGBgcHl0aG9uDQpkZWYgY2hlY2sobnVtKToNCiAgICByZXR1cm4gIkV2ZW4iIGlmIG51bSAlIDIgPT0gMCBlbHNlICJPZGQiDQoNCnByaW50KGNoZWNrKDkpKQ0KYGBgDQoNCjEuIFsgXSBFdmVuDQoyLiBbeF0gT2RkDQozLiBbIF0gOQ0KNC4gWyBdIEVycm9yDQo=">python.md
+                            in base64</a>
+                    </td>
+                    <td>
+                        <a
+                            href="/quizhub/?t=dGltZTogMjANCnBvaW50czogMTAwMA0KIyMgV2hhdCBkb2VzIHRoZSBmb2xsb3dpbmcgY29kZSBvdXRwdXQ/DQoNCmBgYHB5dGhvbg0KcHJpbnQoIlB5dGhvbiEiWzFdKQ0KYGBgDQoNCjEuIFsgXSBQDQoyLiBbeF0geQ0KMy4gWyBdIHQNCjQuIFsgXSBoDQo1LiBbIF0gbw0KNi4gWyBdIG4NCg0KDQojIyBXaGF0IGlzIHRoZSByZXN1bHQgb2YgdGhlIGZvbGxvd2luZyBvcGVyYXRpb24/DQoNCmBgYHB5dGhvbg0KYSA9IDEwDQpiID0gMw0KcHJpbnQoYSAlIGIpDQpgYGANCg0KMS4gWyBdIDANCjIuIFt4XSAxDQozLiBbIF0gMg0KNC4gWyBdIDMNCjUuIFsgXSBlcnJvcg0KDQoNCiMjIFdoYXQgd2lsbCBiZSB0aGUgb3V0cHV0IG9mIHRoaXMgY29kZT8NCg0KYGBgcHl0aG9uDQpudW1iZXJzID0gWzEsIDIsIDMsIDQsIDVdDQpwcmludChudW1iZXJzWy0yXSkNCmBgYA0KDQoxLiBbIF0gMQ0KMi4gWyBdIDINCjMuIFsgXSAzDQo0LiBbeF0gNA0KNS4gWyBdIDUNCg0KDQojIyBXaGF0IGRvZXMgdGhlIGZvbGxvd2luZyBjb2RlIHJldHVybj8NCg0KYGBgcHl0aG9uDQpkZWYgY2hlY2sobnVtKToNCiAgICByZXR1cm4gIkV2ZW4iIGlmIG51bSAlIDIgPT0gMCBlbHNlICJPZGQiDQoNCnByaW50KGNoZWNrKDkpKQ0KYGBgDQoNCjEuIFsgXSBFdmVuDQoyLiBbeF0gT2RkDQozLiBbIF0gOQ0KNC4gWyBdIEVycm9yDQo=">python
+                            quiz via base 64</a>
                     </td>
                 </tr>
             </table>
