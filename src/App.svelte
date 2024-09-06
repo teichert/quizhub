@@ -41,19 +41,21 @@
     let last_time = window.performance.now();
     let frame;
 
-    (function update() {
-        frame = requestAnimationFrame(update);
+    function update() {
+        setTimeout(() => {
+            frame = requestAnimationFrame(update);
 
-        const time = window.performance.now();
-        if ($isStarted && !$onResults) {
-            const timeSinceLastUpdate = time - last_time;
-            $question.responseTimeMilliSeconds = Math.min(
-                $question.allottedTimeMilliSeconds,
-                $question.responseTimeMilliSeconds + timeSinceLastUpdate
-            );
-        }
-        last_time = time;
-    })();
+            const time = window.performance.now();
+            if ($isStarted && !$onResults) {
+                const timeSinceLastUpdate = time - last_time;
+                $question.responseTimeMilliSeconds = Math.min(
+                    $question.allottedTimeMilliSeconds,
+                    $question.responseTimeMilliSeconds + timeSinceLastUpdate
+                );
+            }
+            last_time = time;
+        }, 50);
+    }
 
     onDestroy(() => {
         cancelAnimationFrame(frame);
@@ -92,6 +94,7 @@
             textColor
         );
         node.style.minHeight = `${minHeight}px`;
+        update();
     });
 </script>
 
