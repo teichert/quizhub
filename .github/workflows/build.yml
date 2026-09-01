@@ -7,10 +7,10 @@ jobs:
         runs-on: ubuntu-latest
         strategy:
             matrix:
-                node-version: [12.x]
+                node-version: [20.x]
         steps:
             - name: Checkout
-              uses: actions/checkout@v2
+              uses: actions/checkout@v4
               with:
                   persist-credentials: false
             - name: Reconfigure git to use HTTP authentication
@@ -18,15 +18,10 @@ jobs:
                   git config --global url."https://github.com/".insteadOf
                   ssh://git@github.com/
             - name: Setup Node.js ${{ matrix.node-version }}
-              uses: actions/setup-node@v1
+              uses: actions/setup-node@v4
               with:
                   node-version: ${{ matrix.node-version }}
-
-            - name: Cache Node Modules
-              uses: actions/cache@v1
-              with:
-                  path: .cache
-                  key: ${{ runner.OS }}-build-${{ hashFiles('**/package-lock.json') }}
+                  cache: 'npm'
 
             - run: npm ci
             - run: npm run validate
@@ -34,7 +29,7 @@ jobs:
 
             - name: Deploy on push to main branch
               if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-              uses: peaceiris/actions-gh-pages@v3
+              uses: peaceiris/actions-gh-pages@v4
               with:
                   github_token: ${{ secrets.GITHUB_TOKEN }}
                   publish_branch: gh-pages
