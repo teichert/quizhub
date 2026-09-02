@@ -85,7 +85,13 @@
             }
 
             if (encodedText) {
-                handleMarkdown(atob(encodedText), {});
+                // btoa/atob only handle Latin1, so the editor encodes quiz
+                // text as UTF-8 bytes first; mirror that here to decode it.
+                const binary = atob(encodedText);
+                const bytes = Uint8Array.from(binary, (char) =>
+                    char.charCodeAt(0)
+                );
+                handleMarkdown(new TextDecoder().decode(bytes), {});
             } else if (sourceUrl) {
                 downloadFn(
                     sourceUrl,

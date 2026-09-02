@@ -51,3 +51,19 @@ export function readQuizSource(search: string): QuizSource {
 export function textParamFor(version: QuizFormatVersion): string {
     return version === 2 ? 't2' : 't';
 }
+
+// btoa/atob only handle Latin1, so quiz text (which can contain any
+// unicode character, e.g. accents or non-Latin scripts) is routed through
+// UTF-8 bytes first.
+export function encodeQuizText(text: string): string {
+    const bytes = new TextEncoder().encode(text);
+    let binary = '';
+    bytes.forEach((byte) => (binary += String.fromCharCode(byte)));
+    return btoa(binary);
+}
+
+export function decodeQuizText(encoded: string): string {
+    const binary = atob(encoded);
+    const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+    return new TextDecoder().decode(bytes);
+}

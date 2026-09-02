@@ -2,7 +2,12 @@
     import Button from './components/Button.svelte';
     import Icon from './components/Icon.svelte';
     import defaultText from './toolbarDefaultText';
-    import { readQuizSource, textParamFor } from './quizFormat';
+    import {
+        readQuizSource,
+        textParamFor,
+        encodeQuizText,
+        decodeQuizText,
+    } from './quizFormat';
     import { writable, get } from 'svelte/store';
     import { onMount } from 'svelte';
     import { text } from 'svelte/internal';
@@ -44,7 +49,7 @@
             });
             return;
         } else if (source.encodedText) {
-            const text = atob(source.encodedText);
+            const text = decodeQuizText(source.encodedText);
             content.set(text);
             callOutsideOnInternalChange(text);
             return;
@@ -98,7 +103,7 @@
     // payload (which can contain '+', '/', '=') is properly encoded rather
     // than concatenated raw into the query string.
     function buildQuizUrl(pathname) {
-        const encodedContent = btoa(get(content));
+        const encodedContent = encodeQuizText(get(content));
         const paramName = textParamFor(formatVersion);
         const url = new URL(window.location.href);
         url.pathname = pathname;

@@ -253,7 +253,7 @@
 </div>
 
 <!-- global styles applied to all elements in the app -->
-<style type="text/scss" global>
+<style lang="scss" global>
     @import 'highlight.js/styles/github';
     @import 'katex/dist/katex';
     @import '@fortawesome/fontawesome-svg-core/styles';
