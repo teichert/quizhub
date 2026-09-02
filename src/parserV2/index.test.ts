@@ -142,8 +142,58 @@ b) 1
         expect(activeQuestionFor(16)).toBe(2);
     });
 
+    it('carries the allotted time forward from question to question', () => {
+        const quiz = parseQuizVersion2(
+            `ShuffleAnswers: false
+<!-- time: 20 -->
+---
+First, at the quiz-wide 20s
+*a) yes
+---
+<!-- time: 45 -->
+Second, and every question after it, at 45s
+*a) yes
+---
+Third, still 45s
+*a) yes
+---
+<!-- time: 5 -->
+Fourth, back down to 5s
+*a) yes
+`,
+            new Config({})
+        );
+        expect(
+            quiz.questions.map((q) => q.allottedTimeMilliSeconds / 1000)
+        ).toEqual([20, 45, 45, 5]);
+    });
+
+    it('falls back to the config default when no directive appears', () => {
+        const quiz = parseQuizVersion2(SAMPLE, new Config({}));
+        expect(quiz.questions[0].allottedTimeMilliSeconds).toBe(10000);
+    });
+
+    it('lets the page override the default, and the directive override that', () => {
+        const withoutDirective = parseQuizVersion2(
+            SAMPLE,
+            new Config({ timeForQuestion: 60 })
+        );
+        expect(withoutDirective.questions[0].allottedTimeMilliSeconds).toBe(60000);
+
+        const withDirective = parseQuizVersion2(
+            'ShuffleAnswers: false\n<!-- time: 30 -->\n---\nA question\n*a) yes\n',
+            new Config({ timeForQuestion: 60 })
+        );
+        expect(withDirective.questions[0].allottedTimeMilliSeconds).toBe(30000);
+    });
+
     it('parses the shipped public/demo2.md sample without throwing', () => {
         const quiz = parseQuizVersion2(demo2Markdown, new Config({}));
+        // 20s quiz-wide; 30s carries across the two rendering questions, and
+        // the closing essay gets two minutes
+        expect(
+            quiz.questions.map((q) => q.allottedTimeMilliSeconds / 1000)
+        ).toEqual([20, 20, 20, 20, 20, 20, 30, 30, 120]);
         expect(quiz.questions.map((q) => q.questionType)).toEqual([
             'SingleChoice',
             'MultipleChoice',
@@ -151,6 +201,8 @@ b) 1
             'Numerical',
             'ShortAnswer',
             'OpenResponse',
+            'SingleChoice',
+            'SingleChoice',
             'OpenResponse',
         ]);
     });

@@ -4,7 +4,10 @@
 // AssignmentGroup/AllowedAttempts/OneQuestionAtATime/ShowCorrectAnswers) are
 // simply ignored rather than required/validated, since quizhub only renders
 // a quiz -- it never writes canvasManagement markdown back out.
-import { parseQuestionMarkdownV2 } from './questionMarkdownV2';
+import {
+    parseQuestionMarkdownV2,
+    splitTimeDirective,
+} from './questionMarkdownV2';
 import type { ParsedQuizV2 } from './types';
 
 // a line of only dashes separates the settings block and each question
@@ -25,8 +28,13 @@ export function parseQuizMarkdownV2(input: string): ParsedQuizV2 {
         }
     }
 
+    // a `<!-- time: N -->` here sets the allotted time for the whole quiz
+    const { timeForQuestion, lines: settingsLines } = splitTimeDirective(
+        sections[0]
+    );
+
     // ShuffleAnswers and Description are the only settings quizhub renders
-    const settings = sections[0].join('\n');
+    const settings = settingsLines.join('\n');
     const shuffleAnswers = /^ShuffleAnswers:[ \t]*true/im.test(settings);
     const description = /^Description:[ \t]*([\s\S]*)/m.exec(settings);
 
@@ -39,6 +47,7 @@ export function parseQuizMarkdownV2(input: string): ParsedQuizV2 {
     return {
         shuffleAnswers,
         description: description ? description[1].trim() : '',
+        timeForQuestion,
         questions,
     };
 }

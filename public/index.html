@@ -108,8 +108,10 @@
                 const submitButton =
                     document.getElementById('submitButton');
 
+                // the demo is written in the version 2 format, including its
+                // `<!-- time: N -->` directives
                 markdownDownload(
-                    '/quizhub/demo.md',
+                    '/quizhub/demo2.md',
                     (markdown, params) => {
                         if (!markdown) {
                             return;
@@ -120,7 +122,7 @@
                         quizdown
                             .register(quizdownKatex)
                             .register(quizdownHighlight)
-                            .createApp(markdown, quizDemo, params);
+                            .createApp(markdown, quizDemo, params, 2);
                     },
                     (error) => {
                         console.error({ error });
@@ -454,6 +456,23 @@
                 <tr>
                     <th>Sample File</th>
                     <th>Output Quiz</th>
+                </tr>
+                <tr>
+                    <td>
+                        <a href="/quizhub/edit/?s2=/quizhub/demo2.md">demo2.md (canvasManagement
+                            format)</a>
+                    </td>
+                    <td>
+                        <a href="/quizhub/?s2=/quizhub/demo2.md">demo2 quiz</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <a href="/quizhub/edit/?s=/quizhub/demo.md">demo.md (quizdown format)</a>
+                    </td>
+                    <td>
+                        <a href="/quizhub/?s=/quizhub/demo.md">demo quiz</a>
+                    </td>
                 </tr>
                 <tr>
                     <td>

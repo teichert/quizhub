@@ -16,6 +16,47 @@ describe('parseQuestionMarkdownV2', () => {
         expect(q.text).toBe('True or false?');
     });
 
+    it('reads a `<!-- time: N -->` directive and keeps it out of the text', () => {
+        const q = parseQuestionMarkdownV2(
+            '<!-- time: 45 -->\nPoints: 2\nTrue or false?\n*a) true\nb) false\n'
+        );
+        expect(q.timeForQuestion).toBe(45);
+        expect(q.points).toBe(2);
+        expect(q.text).toBe('True or false?');
+    });
+
+    it('takes the directive anywhere in the question, and the last one wins', () => {
+        const q = parseQuestionMarkdownV2(
+            'True or false?\n<!--time:30-->\n*a) true\nb) false\n<!-- TIME: 12.5 -->\n'
+        );
+        expect(q.timeForQuestion).toBe(12.5);
+        expect(q.questionType).toBe('multiple_choice');
+        expect(q.answers).toHaveLength(2);
+        expect(q.text).toBe('True or false?');
+    });
+
+    it('leaves the question type alone when the directive is the last line', () => {
+        const q = parseQuestionMarkdownV2(
+            'Describe the algorithm.\nessay\n<!-- time: 300 -->\n'
+        );
+        expect(q.questionType).toBe('essay');
+        expect(q.timeForQuestion).toBe(300);
+        expect(q.text).toBe('Describe the algorithm.');
+    });
+
+    it('reports no time when the question carries no directive', () => {
+        const q = parseQuestionMarkdownV2('True or false?\n*a) true\nb) false\n');
+        expect(q.timeForQuestion).toBeUndefined();
+    });
+
+    it('keeps an ordinary html comment in the question text', () => {
+        const q = parseQuestionMarkdownV2(
+            'True or false?\n<!-- a note to self -->\n*a) true\nb) false\n'
+        );
+        expect(q.timeForQuestion).toBeUndefined();
+        expect(q.text).toBe('True or false?\n<!-- a note to self -->');
+    });
+
     it('keeps a fenced code block in the question text out of the answer scan', () => {
         const input = [
             'Points: 2',

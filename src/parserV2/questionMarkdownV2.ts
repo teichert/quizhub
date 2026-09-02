@@ -6,6 +6,28 @@ import type { ParsedQuestionV2 } from './types';
 
 const POINTS_LINE = /^points:[ \t]*(\d+(?:\.\d+)?)[ \t]*$/i;
 
+// quizhub's answer to v1's `time:` directive. An HTML comment on a line of its
+// own, so canvasManagement carries it through the file untouched and Canvas
+// never renders it: `<!-- time: 30 -->`.
+const TIME_DIRECTIVE =
+    /^[ \t]*<!--[ \t]*time:[ \t]*(\d+(?:\.\d+)?)[ \t]*-->[ \t]*$/i;
+
+// Takes the directive lines out of a section and reports the last value seen,
+// so the directive can sit anywhere in the question without becoming text.
+export function splitTimeDirective(lines: string[]): {
+    timeForQuestion?: number;
+    lines: string[];
+} {
+    let timeForQuestion: number | undefined;
+    const rest = lines.filter((line) => {
+        const match = TIME_DIRECTIVE.exec(line);
+        if (!match) return true;
+        timeForQuestion = parseFloat(match[1]);
+        return false;
+    });
+    return { timeForQuestion, lines: rest };
+}
+
 function splitPointsLine(lines: string[]): { points: number; lines: string[] } {
     const match = POINTS_LINE.exec(lines[0] || '');
     return match
@@ -28,7 +50,12 @@ function getLinesBeforeAnswerLines(lines: string[]): string[] {
 }
 
 export function parseQuestionMarkdownV2(input: string): ParsedQuestionV2 {
-    const { points, lines } = splitPointsLine(input.trim().split('\n'));
+    // the time directive comes out first: it must not be mistaken for the
+    // trailing keyword line that decides essay/short_answer
+    const { timeForQuestion, lines: timeless } = splitTimeDirective(
+        input.trim().split('\n')
+    );
+    const { points, lines } = splitPointsLine(timeless);
 
     const questionType = getQuestionType(lines);
     // essay/short_answer are marked by a trailing keyword line that
@@ -47,6 +74,7 @@ export function parseQuestionMarkdownV2(input: string): ParsedQuestionV2 {
         text: otherLines.join('\n'),
         questionType,
         points,
+        timeForQuestion,
         answers,
         matchDistractors,
         correctComments,

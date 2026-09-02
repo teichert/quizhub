@@ -124,8 +124,31 @@ Only `ShuffleAnswers` and `Description` affect quizhub's rendering; other settin
 (`DueAt`, `LockAt`, `UnlockAt`, `Password`, `AssignmentGroup`, `AllowedAttempts`,
 `OneQuestionAtATime`, `ShowCorrectAnswers`) are Canvas-submission-only and ignored.
 An optional `Points: N` line at the start of a question sets that question's score
-(default 1); there is no per-question time limit in this format, so quizhub's
-usual timed-scoring countdown uses the app's global default time per question.
+(default 1).
+
+### Allotted time
+
+Version 1 sets the countdown a question is scored against with a `time: N` line
+(seconds), which holds until another one changes it. canvasManagement's format
+has no field for that -- Canvas times a quiz as a whole -- so version 2 spells
+it as an HTML comment, which canvasManagement carries through the file and
+Canvas never renders:
+
+```
+<!-- time: 20 -->
+```
+
+It behaves like version 1's directive: put it in the settings block to set the
+time for the whole quiz, or in a question to change it from that question on.
+
+| | version 1 | version 2 |
+| --- | --- | --- |
+| time per question | `time: 30`, carries forward | `<!-- time: 30 -->`, carries forward |
+| points per question | `points: 2`, carries forward | `Points: 2`, that question only |
+
+With no directive anywhere, both formats fall back to the app's global
+`timeForQuestion` (10 seconds unless the embedding page sets it). The directive
+must be alone on its line; any other HTML comment is left in the question text.
 
 Question types map onto quizhub's question types as follows:
 

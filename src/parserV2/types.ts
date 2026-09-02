@@ -21,6 +21,9 @@ export interface ParsedQuestionV2 {
     text: string;
     questionType: QuestionTypeV2;
     points: number;
+    // seconds, from a `<!-- time: N -->` directive; absent means "carry on
+    // with whatever the previous question was allotted"
+    timeForQuestion?: number;
     answers: ParsedAnswerV2[];
     matchDistractors: string[];
     correctComments?: string;
@@ -31,5 +34,7 @@ export interface ParsedQuestionV2 {
 export interface ParsedQuizV2 {
     shuffleAnswers: boolean;
     description: string;
+    // seconds, from a `<!-- time: N -->` directive in the settings block
+    timeForQuestion?: number;
     questions: ParsedQuestionV2[];
 }

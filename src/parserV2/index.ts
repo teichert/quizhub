@@ -102,9 +102,14 @@ function buildQuestion(q: ParsedQuestionV2, options: Config): BaseQuestion {
     }
 }
 
-function configForQuestion(base: Config, points: number): Config {
+function configForQuestion(
+    base: Config,
+    points: number,
+    timeForQuestion: number
+): Config {
     const config = new Config(base);
     config.pointsForQuestion = points;
+    config.timeForQuestion = timeForQuestion;
     return config;
 }
 
@@ -126,6 +131,9 @@ function parseQuizVersion2(rawMarkdown: string, globalConfig: Config): Quiz {
     if (parsed.description) {
         quizConfig.description = renderMarkdown(parsed.description);
     }
+    if (parsed.timeForQuestion) {
+        quizConfig.timeForQuestion = parsed.timeForQuestion;
+    }
     if (globalConfig.activeLineNumber) {
         quizConfig.activeQuestion = findActiveQuestion(
             rawMarkdown,
@@ -133,9 +141,18 @@ function parseQuizVersion2(rawMarkdown: string, globalConfig: Config): Quiz {
         );
     }
 
-    const questions = parsed.questions.map((q) =>
-        buildQuestion(q, configForQuestion(quizConfig, q.points))
-    );
+    // like v1's `time:` directive, a question's allotted time carries forward
+    // to the questions after it until another directive changes it
+    let timeForQuestion = quizConfig.timeForQuestion;
+    const questions = parsed.questions.map((q) => {
+        if (q.timeForQuestion) {
+            timeForQuestion = q.timeForQuestion;
+        }
+        return buildQuestion(
+            q,
+            configForQuestion(quizConfig, q.points, timeForQuestion)
+        );
+    });
 
     return new Quiz(questions, quizConfig);
 }

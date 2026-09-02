@@ -54,6 +54,26 @@ a) one
         expect(quiz.questions).toHaveLength(1);
     });
 
+    it('reads a `<!-- time: N -->` directive from the settings block', () => {
+        const input = `ShuffleAnswers: true
+<!-- time: 25 -->
+Description: line one
+---
+a) one
+b) two
+`;
+        const quiz = parseQuizMarkdownV2(input);
+        expect(quiz.timeForQuestion).toBe(25);
+        // the directive must not end up inside the description
+        expect(quiz.description).toBe('line one');
+        expect(quiz.shuffleAnswers).toBe(true);
+    });
+
+    it('leaves timeForQuestion unset when no directive is present', () => {
+        const quiz = parseQuizMarkdownV2('ShuffleAnswers: false\n---\na) one\n');
+        expect(quiz.timeForQuestion).toBeUndefined();
+    });
+
     it('only splits on a line that is nothing but dashes', () => {
         const input = [
             'ShuffleAnswers: false',
