@@ -63,6 +63,9 @@ function makeValueDirectiveExtension(name: string) {
     };
 }
 
+// @types/marked is two majors behind the marked we run: its MarkedExtension
+// predates the extensions API
+// @ts-ignore
 marked.use({ extensions: [makeValueDirectiveExtension("time"), makeValueDirectiveExtension("points")] });
 
 marked.use({

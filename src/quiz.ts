@@ -1,4 +1,5 @@
-import { writable, get, Writable } from 'svelte/store';
+import { writable, get } from 'svelte/store';
+import type { Writable } from 'svelte/store';
 import autoBind from 'auto-bind';
 import type { Config } from './config.js';
 
@@ -32,7 +33,11 @@ export type QuestionType =
     | 'NoChoiceQuestion'
     | 'Sequence'
     | 'Information'
-    | 'InvalidQuestion';
+    | 'InvalidQuestion'
+    | 'Matching'
+    | 'ShortAnswer'
+    | 'Numerical'
+    | 'OpenResponse';
 
 export abstract class BaseQuestion {
     readonly text: string;
@@ -89,7 +94,7 @@ export abstract class BaseQuestion {
         }
     }
 
-    computeKahootStyleScore() {
+    computeQuizhubStyleScore() {
         if (!this.isCorrect()) return 0;
         if (this.responseTimeMilliSeconds < 500) return this.maxScore;
         if (this.responseTimeMilliSeconds >= this.allottedTimeMilliSeconds) return 0;
@@ -205,6 +210,138 @@ export class Information extends BaseQuestion {
     }
     isCorrect() {
         this.solved = true;
+        return this.solved;
+    }
+}
+
+// how a typed response is entered: single-line, numeric keypad, or multi-line
+export type ResponseInputMode = 'text' | 'decimal' | 'essay';
+
+// questions answered by typing a response instead of picking from `answers`
+export abstract class ResponseQuestion extends BaseQuestion {
+    response: string;
+    inputMode: ResponseInputMode = 'text';
+
+    reset() {
+        super.reset();
+        this.response = '';
+    }
+}
+
+export class ShortAnswerQuestion extends ResponseQuestion {
+    // `answers` holds the accepted responses; the typed response is matched
+    // against them trimmed and case-insensitively
+    constructor(
+        text: string,
+        explanation: string,
+        hint: string,
+        answers: Array<Answer>,
+        options: Config
+    ) {
+        super(text, explanation, hint, answers, 'ShortAnswer', options);
+    }
+
+    isCorrect() {
+        const normalize = (s: string) => s.trim().toLowerCase();
+        const response = normalize(this.response);
+        this.solved = this.answers
+            .filter((answer) => answer.correct)
+            .some((answer) => normalize(answer.html) === response);
+        return this.solved;
+    }
+}
+
+export interface NumericalAnswer {
+    // 'exact': value must equal `value`; 'range': value must fall within [min, max]
+    type: 'exact' | 'range';
+    value?: number;
+    min?: number;
+    max?: number;
+}
+
+export class NumericalQuestion extends ResponseQuestion {
+    acceptedAnswers: Array<NumericalAnswer>;
+
+    constructor(
+        text: string,
+        explanation: string,
+        hint: string,
+        acceptedAnswers: Array<NumericalAnswer>,
+        options: Config
+    ) {
+        super(text, explanation, hint, [], 'Numerical', options);
+        this.acceptedAnswers = acceptedAnswers;
+        this.inputMode = 'decimal';
+    }
+
+    isCorrect() {
+        // a non-numeric response parses to NaN, which compares false throughout
+        const value = parseFloat(this.response);
+        this.solved = this.acceptedAnswers.some((answer) =>
+            answer.type === 'range'
+                ? value >= answer.min && value <= answer.max
+                : value === answer.value
+        );
+        return this.solved;
+    }
+}
+
+export class OpenResponseQuestion extends ResponseQuestion {
+    // ungraded: the response and its response time are recorded like any other
+    // question, but there is no correct answer to grade against
+    constructor(
+        text: string,
+        explanation: string,
+        hint: string,
+        options: Config,
+        inputMode: ResponseInputMode
+    ) {
+        super(text, explanation, hint, [], 'OpenResponse', options, /* skipScore */ true);
+        this.inputMode = inputMode;
+    }
+
+    isCorrect() {
+        this.solved = true;
+        return this.solved;
+    }
+}
+
+export interface MatchingPair {
+    promptHtml: string;
+    // Answer.id of the match option that is correct for this prompt
+    correctMatchId: number;
+}
+
+export class MatchingQuestion extends BaseQuestion {
+    // one prompt per pair; `answers` holds the (possibly shuffled) match options
+    pairs: Array<MatchingPair>;
+    // selections[i] is the chosen match option's Answer.id for pairs[i], or null
+    selections: Array<number | null>;
+
+    constructor(
+        text: string,
+        explanation: string,
+        hint: string,
+        matchOptions: Array<Answer>,
+        pairs: Array<MatchingPair>,
+        options: Config
+    ) {
+        super(text, explanation, hint, matchOptions, 'Matching', options);
+        this.pairs = pairs;
+        this.selections = pairs.map(() => null);
+    }
+
+    reset() {
+        super.reset();
+        // `pairs` is still unset the first time this runs, from BaseQuestion's
+        // constructor -- the constructor body fills the selections in after
+        this.selections = (this.pairs || []).map(() => null);
+    }
+
+    isCorrect() {
+        this.solved = this.pairs.every(
+            (pair, i) => this.selections[i] === pair.correctMatchId
+        );
         return this.solved;
     }
 }
@@ -357,9 +494,9 @@ export class Quiz {
     evaluate(): number {
         let points = 0;
         for (var q of this.questions) {
-            if (q.isCorrect()) {
-                points += q.computeKahootStyleScore()
-            }
+            // computeQuizhubStyleScore() grades the question (setting `solved`)
+            // and returns 0 for anything unsolved or ungraded
+            points += q.computeQuizhubStyleScore();
         }
         this.isEvaluated.set(true);
         return points;

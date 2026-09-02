@@ -53,6 +53,11 @@
             const sourceUrl =
                 queryParams.get('source') || queryParams.get('s');
             const encodedText = queryParams.get('text') || queryParams.get('t');
+            // version 2: canvasManagement-format quiz markdown
+            const sourceUrl2 =
+                queryParams.get('source2') || queryParams.get('s2');
+            const encodedText2 =
+                queryParams.get('text2') || queryParams.get('t2');
 
             let downloadFn = markdownDownload;
 
@@ -60,12 +65,10 @@
             let authorUrl;
             let authorImageUrl;
 
-            let urlToFetch = '';
+            const version = (encodedText2 || sourceUrl2) ? 2 : 1;
+            const resolvedEncodedText = encodedText2 || encodedText;
+            let urlToFetch = sourceUrl2 || sourceUrl || '';
 
-            if (sourceUrl) {
-                // Use the direct URL provided by source or s
-                urlToFetch = sourceUrl;
-            }
             function handleMarkdown(markdown, params) {
                 if (!params) {
                     params = {};
@@ -88,11 +91,11 @@
                 quizdown
                     .register(quizdownKatex)
                     .register(quizdownHighlight)
-                    .createApp(markdown, newQuizElement, config);
+                    .createApp(markdown, newQuizElement, config, version);
             }
 
-            if (encodedText) {
-                handleMarkdown(atob(encodedText), {});
+            if (resolvedEncodedText) {
+                handleMarkdown(atob(resolvedEncodedText), {});
             } else if (urlToFetch) {
                 downloadFn(
                     urlToFetch,

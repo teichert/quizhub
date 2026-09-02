@@ -3,9 +3,16 @@
     "allowSyntheticDefaultImports": true,
     "compilerOptions": {
         "resolveJsonModule": true,
-        "types": ["marked", "svelte"]
+        "types": ["marked", "svelte"],
+        // the base config turns these on; the codebase predates both
+        "strict": false,
+        // svelte-preprocess transpiles each file on its own
+        "isolatedModules": true,
+        // "target": "es2017" alone would leave out trimStart and friends;
+        // DOM.Iterable is what makes for-of over a NodeList typecheck
+        "lib": ["ES2022", "DOM", "DOM.Iterable"]
     },
 
     "include": ["src/**/*"],
-    "exclude": ["node_modules/*", "__sapper__/*", "public/*", "docs/*"]
+    "exclude": ["node_modules/*", "__sapper__/*", "public/*", "docs/*", "src/**/*.test.ts"]
 }

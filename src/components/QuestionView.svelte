@@ -7,6 +7,8 @@
 
     import SequenceView from './SequenceView.svelte';
     import ChoiceView from './ChoiceView.svelte';
+    import MatchingView from './MatchingView.svelte';
+    import ResponseView from './ResponseView.svelte';
     import { _ } from 'svelte-i18n';
 
     export let question: BaseQuestion;
@@ -21,6 +23,10 @@
         NoChoiceQuestion: ChoiceView,
         Information: ChoiceView,
         InvalidQuestion: ChoiceView,
+        Matching: MatchingView,
+        ShortAnswer: ResponseView,
+        Numerical: ResponseView,
+        OpenResponse: ResponseView,
     };
 </script>
 

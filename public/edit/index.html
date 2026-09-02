@@ -109,7 +109,7 @@
                         }
                     );
 
-                    renderQuiz(newContent);
+                    renderQuiz(newContent, 0, myToolbar.getFormatVersion());
                 } else {
                     // Logic to update Monaco editor or perform other actions
                     const fullModelRange = editor
@@ -138,13 +138,17 @@
 
                 clearTimeout(renderQuizDebounceTimer);
                 renderQuizDebounceTimer = setTimeout(function () {
-                    renderQuiz(currentContent, activeLineNumber);
+                    renderQuiz(
+                        currentContent,
+                        activeLineNumber,
+                        myToolbar.getFormatVersion()
+                    );
                     myToolbar.onTextChange(currentContent);
                 }, 400); // Wait for 1 second before rendering
             }
         });
 
-        function renderQuiz(markdown, activeLineNumber = 0) {
+        function renderQuiz(markdown, activeLineNumber = 0, version = 1) {
             const quizContainer = document.getElementById('quizContainer');
             quizContainer.innerHTML = ''; // Clear previous content
             const newQuizElement = document.createElement('div');
@@ -161,7 +165,7 @@
             quizdown
                 .register(quizdownKatex)
                 .register(quizdownHighlight)
-                .createApp(markdown, newQuizElement, config);
+                .createApp(markdown, newQuizElement, config, version);
         }
     </script>
 </body>

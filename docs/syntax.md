@@ -92,3 +92,66 @@ That's **super easy**!
 ## Fill in the Blanks (WIP)
 
 ...
+
+---
+
+# Version 2: canvasManagement quiz format
+
+As an alternative to the syntax above, quizhub can load quiz files written in the
+markdown format used by canvasManagement, a separate tool for authoring Canvas
+LMS quizzes. Pass it via `?t2=` (base64-encoded, mirrors `?t=`) or `?s2=`
+(a URL to fetch, mirrors `?s=`) instead of `?t=`/`?s=`. See `public/demo2.md` for
+a full example covering every supported question type.
+
+A version-2 file has a `Label: value` settings block, then one or more questions
+separated by a line containing only `---`:
+
+```
+ShuffleAnswers: false
+Description: shown as the quiz's intro text
+---
+Points: 2
+Which color is the sky on a clear day?
+*a) blue
+b) green
+---
+Which of these events fire when a user clicks a button?
+[*] click
+[ ] hover
+```
+
+Only `ShuffleAnswers` and `Description` affect quizhub's rendering; other settings
+(`DueAt`, `LockAt`, `UnlockAt`, `Password`, `AssignmentGroup`, `AllowedAttempts`,
+`OneQuestionAtATime`, `ShowCorrectAnswers`) are Canvas-submission-only and ignored.
+An optional `Points: N` line at the start of a question sets that question's score
+(default 1); there is no per-question time limit in this format, so quizhub's
+usual timed-scoring countdown uses the app's global default time per question.
+
+Question types map onto quizhub's question types as follows:
+
+| canvasManagement syntax | quizhub type | Scored? |
+| --- | --- | --- |
+| `a)` / `*a)` answer lines | Single choice | yes |
+| `[ ]` / `[*]` answer lines | Multiple choice | yes |
+| `^ prompt - match` (optionally with `^ - distractor` lines) | Matching | yes, all-or-nothing |
+| `= accepted text` lines followed by a trailing `short_answer=` line | Short answer | yes |
+| `= value` (exact) or `= [min, max]` (range) | Numerical | yes |
+| trailing `short answer`/`short_answer` line, no answers | Open response (text input) | no |
+| trailing `essay` line | Open response (textarea) | no |
+
+The two "open response" question types (bare short answer and essay) record a
+typed response and its response time like any other question, but never
+contribute to the score (shown as a neutral result, not green or red) -- unlike
+numerical and `short_answer=`, they have no defined correct answer to grade
+against.
+
+A question body may also carry Canvas's answer feedback: lines starting with
+`+` (correct), `-` (incorrect) or `...` (neutral), each continued on the
+unprefixed lines below it. Canvas only reveals feedback after submission and
+quizhub has no equivalent moment, so the feedback becomes the question's hint,
+behind the lightbulb button -- printing it under the question would give the
+answer away before it is given.
+
+quizhub's live editor (`/edit/`) also accepts `?t2=`/`?s2=` and keeps track of
+which format was loaded, so its live preview, its "Save"/"Run" links and its
+jump-to-the-question-under-the-cursor all stay in the right format.

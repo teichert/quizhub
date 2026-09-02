@@ -7,9 +7,10 @@
     "scripts": {
         "build": "rollup -c",
         "dev": "dotenv -e .env -- rollup -wc",
-        "start": "npx ws -p 5600 -r '/quizhub/(.*)->/$1' -d public --hostname localhost",
+        "start": "ws -p 5600 -r '/quizhub/(.*)->/$1' -d public --hostname localhost",
         "validate": "svelte-check",
-        "deploy": "gh-pages -d public"
+        "deploy": "gh-pages -d public",
+        "test": "vitest run"
     },
     "keywords": [
         "quiz",
@@ -27,12 +28,13 @@
         "@rollup/plugin-replace": "^5.0.7",
         "@rollup/plugin-terser": "^0.4.4",
         "@rollup/plugin-typescript": "^11.1.6",
-        "@tsconfig/svelte": "^1.0.10",
+        "@tsconfig/svelte": "^5.0.8",
         "@types/marked": "^2.0.3",
         "acorn": "^8.2.4",
         "css-tree": "^1.1.3",
         "dotenv-cli": "^4.1.1",
         "gh-pages": "^6.1.1",
+        "jsdom": "^24.1.0",
         "local-web-server": "^5.4.0",
         "postcss": "^8.3.5",
         "rollup": "^4.21.0",
@@ -44,9 +46,10 @@
         "sirv-cli": "^1.0.0",
         "svelte": "^3.43.2",
         "svelte-check": "^1.0.0",
-        "svelte-preprocess": "^4.0.0",
+        "svelte-preprocess": "^5.1.4",
         "tslib": "^2.0.0",
-        "typescript": "^3.9.3"
+        "typescript": "^5.9.3",
+        "vitest": "^1.6.0"
     },
     "repository": "https://github.com/bonartm/quizdown-js",
     "main": "public/build/quizdown.js",

@@ -9,8 +9,8 @@ import {
     Information,
     Sequence,
     Answer,
-    QuestionType,
 } from './quiz';
+import type { QuestionType } from './quiz';
 import { Config, mergeAttributes, standardizeNames } from './config';
 import marked from './customizedMarked';
 
@@ -144,7 +144,8 @@ function parseOptions(tokens: marked.Token[], quizConfig: Config): Config {
     // type definition does not allow custom token types
     // @ts-ignore
     let options = tokens.find((token) => token.type == 'options');
-    let data = options['data'];
+    // custom token type: its payload is not in marked's Token union
+    let data = options['data'] as Config;
     if (data['description']) {
         data['description'] = DOMPurify.sanitize(data['description']);
     }
@@ -153,9 +154,10 @@ function parseOptions(tokens: marked.Token[], quizConfig: Config): Config {
 }
 
 function findLastDirectiveValue(tokens: marked.Token[], type: string, defaultValue: number) {
-    const last = tokens.findLast((t) => t.type == type);
-    if (last === undefined) return defaultValue;
-    else return last["value"];
+    for (let i = tokens.length - 1; i >= 0; i--) {
+        if (tokens[i].type == type) return tokens[i]['value'];
+    }
+    return defaultValue;
 }
 
 function extractQuestions(

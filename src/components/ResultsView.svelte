@@ -43,14 +43,18 @@
                 >
                     <span class="list-question">
                         <span
-                        style="padding: 5px; color: {question.solved
-                                ? '#16cc16'
-                                : '#ff3131'}"
+                        style="padding: 5px; color: {question.maxScore === 0
+                                ? 'gray'
+                                : question.solved
+                                  ? '#16cc16'
+                                  : '#ff3131'}"
                         >
                         <Icon
-                        name="{question.solved
-                                    ? 'circle-check'
-                                    : 'circle-xmark'}"
+                        name="{question.maxScore === 0
+                                    ? 'circle-info'
+                                    : question.solved
+                                      ? 'circle-check'
+                                      : 'circle-xmark'}"
                             ></Icon>
                         </span>
                         <progress

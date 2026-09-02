@@ -14,6 +14,8 @@
 
     // Store for toolbar content
     export const content = writable('');
+    // 1 = quizdown markdown, 2 = canvasManagement-format markdown
+    let formatVersion = 1;
 
     function markdownDownload(url, fn, errorFn) {
         fetch(url)
@@ -35,14 +37,22 @@
 
         const sourceUrl = queryParams.get('source') || queryParams.get('s');
         const encodedText = queryParams.get('text') || queryParams.get('t');
-        if (sourceUrl) {
-            markdownDownload(sourceUrl, (text) => {
+        // version 2: canvasManagement-format quiz markdown
+        const sourceUrl2 = queryParams.get('source2') || queryParams.get('s2');
+        const encodedText2 = queryParams.get('text2') || queryParams.get('t2');
+
+        formatVersion = encodedText2 || sourceUrl2 ? 2 : 1;
+        const resolvedSourceUrl = sourceUrl2 || sourceUrl;
+        const resolvedEncodedText = encodedText2 || encodedText;
+
+        if (resolvedSourceUrl) {
+            markdownDownload(resolvedSourceUrl, (text) => {
                 content.set(text);
                 callOutsideOnInternalChange(text);
             });
             return;
-        } else if (encodedText) {
-            const text = atob(encodedText);
+        } else if (resolvedEncodedText) {
+            const text = atob(resolvedEncodedText);
             // const text = decodeURIComponent(encodedText);
             content.set(text);
             callOutsideOnInternalChange(text);
@@ -67,10 +77,17 @@
         return get(content);
     }
 
+    export function getFormatVersion() {
+        return formatVersion;
+    }
+
     let callOutsideOnInternalChange = (text) => {};
 
     export function registerTextChange(callback) {
         callOutsideOnInternalChange = callback;
+        // onMount has already loaded the content by the time anyone can
+        // register, so hand the current content over right away
+        callback(get(content));
     }
 
     export function onTextChange(text) {
@@ -84,26 +101,29 @@
         }
     }
 
-    // Simulate calling the registered callback on content change
-    $: content,
-        callOutsideOnInternalChange &&
-            callOutsideOnInternalChange(get(content));
+    // Builds a quiz URL for `pathname`, carrying the current content/format.
+    // Uses the URL API (not string surgery) so it doesn't depend on the
+    // current URL happening to have a trailing slash, and so the base64
+    // payload (which can contain '+', '/', '=') is properly encoded rather
+    // than concatenated raw into the query string.
+    function buildQuizUrl(pathname) {
+        const encodedContent = btoa(get(content));
+        const paramName = formatVersion === 2 ? 't2' : 't';
+        const url = new URL(window.location.href);
+        url.pathname = pathname;
+        url.search = '';
+        url.searchParams.set(paramName, encodedContent);
+        return url.toString();
+    }
 
     function generateEditQuizURL() {
-        const rawContent = get(content);
-        const encodedContent = btoa(rawContent);
-        // const encodedContent = encodeURIComponent(rawContent);
-        const currentSearch = window.location.search;
-        const newLocation =
-            window.location.href.replace(currentSearch, '') +
-            '?t=' +
-            encodedContent;
-        return newLocation;
+        return buildQuizUrl(window.location.pathname);
     }
 
     function openRunQuizLink() {
+        const runPathname = window.location.pathname.replace(/edit\/?$/, '');
         const toAdd = document.createElement('a');
-        toAdd.setAttribute('href', generateEditQuizURL().replace('/edit', ''));
+        toAdd.setAttribute('href', buildQuizUrl(runPathname));
         toAdd.setAttribute('target', 'runQuizhub');
         document.body.appendChild(toAdd);
         toAdd.click();

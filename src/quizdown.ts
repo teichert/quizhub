@@ -1,5 +1,6 @@
 import App from './App.svelte';
 import parseQuizdown from './parser.js';
+import parseQuizVersion2 from './parserV2/index.js';
 import { Config } from './config.js';
 import marked from './customizedMarked.js';
 import type { Quiz } from './quiz';
@@ -7,8 +8,9 @@ import Toolbar from './Toolbar.svelte';
 
 export interface Quizdown {
     register(extension: QuizdownExtension): Quizdown;
-    createApp(rawQuizdown: string, node: Element, config: Config): App;
+    createApp(rawQuizdown: string, node: Element, config: Config, version?: 1 | 2): App;
     parseQuizdown(rawQuizdown: string, config: Config): Quiz;
+    parseQuizVersion2(rawQuizdown: string, config: Config): Quiz;
     init(config: object): void;
     getMarkedParser(): typeof marked;
     createToolbar(node: Element): Toolbar;
@@ -23,7 +25,7 @@ function register(extension: QuizdownExtension): Quizdown {
     return this as Quizdown;
 }
 
-function createApp(rawQuizdown: string, node: Element, config: Config): App {
+function createApp(rawQuizdown: string, node: Element, config: Config, version: 1 | 2 = 1): App {
     node.innerHTML = '';
     let root: ShadowRoot;
     if (!!node.shadowRoot) {
@@ -39,7 +41,7 @@ function createApp(rawQuizdown: string, node: Element, config: Config): App {
         config = new Config({});
     }
 
-    let quiz = parseQuizdown(rawQuizdown, config);
+    let quiz = version === 2 ? parseQuizVersion2(rawQuizdown, config) : parseQuizdown(rawQuizdown, config);
     let app = new App({
         // https://github.com/sveltejs/svelte/pull/5870
         target: root,
@@ -96,6 +98,7 @@ let quizdown: Quizdown = {
     init,
     register,
     parseQuizdown,
+    parseQuizVersion2,
     createApp,
     getMarkedParser,
     createToolbar,

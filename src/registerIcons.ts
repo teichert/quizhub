@@ -1,4 +1,5 @@
-import { library, config, IconDefinition, IconPack } from '@fortawesome/fontawesome-svg-core';
+import { library, config } from '@fortawesome/fontawesome-svg-core';
+import type { IconDefinition, IconPack } from '@fortawesome/fontawesome-svg-core';
 import {
     faArrowLeft,
     faArrowRight,
@@ -12,6 +13,7 @@ import {
     faDotCircle,
     faCircleCheck,
     faCircleXmark,
+    faCircleInfo,
 	faPlay,
 } from '@fortawesome/free-solid-svg-icons';
 
@@ -40,6 +42,7 @@ export default function() {
         faDotCircle,
         faCircleCheck,
         faCircleXmark,
+        faCircleInfo,
         faSquareRegular,
         faCircleRegular,
         faDotCircleRegular,
