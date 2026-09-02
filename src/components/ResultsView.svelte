@@ -37,35 +37,39 @@
     <div in:fade="{{ duration: 1000 }}" class="results">
         <ol>
             {#each quiz.questions as question}
-                <li
-                    class="top-list-item"
-                    on:click="{() => quiz.jump(question.index)}"
-                >
-                    <span class="list-question">
-                        <span
-                        style="padding: 5px; color: {question.maxScore === 0
-                                ? 'gray'
-                                : question.solved
-                                  ? '#16cc16'
-                                  : '#ff3131'}"
-                        >
-                        <Icon
-                        name="{question.maxScore === 0
-                                    ? 'circle-info'
+                <li class="top-list-item">
+                    <!-- a real button, so the row answers to the keyboard too -->
+                    <button
+                        class="jump-to-question"
+                        on:click="{() => quiz.jump(question.index)}"
+                    >
+                        <span class="list-question">
+                            <span
+                                style="padding: 5px; color: {question.maxScore ===
+                                0
+                                    ? 'gray'
                                     : question.solved
-                                      ? 'circle-check'
-                                      : 'circle-xmark'}"
-                            ></Icon>
+                                      ? '#16cc16'
+                                      : '#ff3131'}"
+                            >
+                                <Icon
+                                    name="{question.maxScore === 0
+                                        ? 'circle-info'
+                                        : question.solved
+                                          ? 'circle-check'
+                                          : 'circle-xmark'}"
+                                ></Icon>
+                            </span>
+                            <progress
+                                style="width: 10%;"
+                                value="{question.responseTimeMilliSeconds /
+                                    question.allottedTimeMilliSeconds}"
+                            ></progress>
+                            <span style="padding: 5px;">
+                                {@html question.text}
+                            </span>
                         </span>
-                        <progress
-                            style="width: 10%;"
-                            value="{question.responseTimeMilliSeconds /
-                                question.allottedTimeMilliSeconds}"
-                        ></progress>
-                        <span style="padding: 5px;">
-                            {@html question.text}
-                        </span>
-                    </span>
+                    </button>
                     <span class="list-answer-comment">
                         <!-- answer comments when selected and available -->
                         {#each question.selected as selected}
@@ -100,8 +104,26 @@
         list-style: none;
     }
 
-    .top-list-item:hover {
+    /* the row's button carries no button chrome: it looks like the list item
+       it sits in, and only the part that jumps lights up */
+    .jump-to-question {
+        display: block;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        border: none;
+        border-radius: 5px;
+        background: none;
+        font: inherit;
+        color: inherit;
+        text-align: left;
         cursor: pointer;
+    }
+
+    .jump-to-question:hover,
+    .jump-to-question:focus {
+        text-decoration: none;
+        background: rgb(0, 0, 0, 0.05);
     }
 
     .list-question {
@@ -110,16 +132,6 @@
         align-items: center;
         padding-left: 5px;
         padding-right: 5px;
-    }
-
-    .top-list-item {
-        border-radius: 5px;
-    }
-
-    .top-list-item:hover,
-    .top-list-item:focus {
-        text-decoration: none;
-        background: rgb(0, 0, 0, 0.05);
     }
 
     .list-comment {
