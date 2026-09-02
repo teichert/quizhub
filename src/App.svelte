@@ -342,5 +342,6 @@
 
     pre {
         margin: 0.3em 0;
+        text-align: left;
     }
 </style>
