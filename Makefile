@@ -2,7 +2,7 @@
 # Targets call node_modules/.bin directly instead of going through npm/npx,
 # which under WSL can resolve to the Windows install and fail on UNC paths.
 .DEFAULT_GOAL := help
-.PHONY: help install dev build test validate clean
+.PHONY: help install dev build test typecheck validate clean
 
 BIN := ./node_modules/.bin
 
@@ -27,6 +27,9 @@ build: ## production build into public/build
 
 test: ## run the unit tests
 	$(BIN)/vitest run
+
+typecheck: ## typecheck the .ts sources
+	$(BIN)/tsc -p tsconfig.json --noEmit
 
 validate: ## typecheck the svelte components
 	$(BIN)/svelte-check
