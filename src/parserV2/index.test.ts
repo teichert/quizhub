@@ -1,5 +1,5 @@
 /// <reference types="vite/client" />
-import { describe, it, expect } from 'vitest';
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 // ?raw hands us the file's text, so the test needs no node APIs
 import demo2Markdown from '../../public/demo2.md?raw';
 import parseQuizVersion2 from './index';
@@ -205,5 +205,94 @@ Fourth, back down to 5s
             'SingleChoice',
             'OpenResponse',
         ]);
+    });
+});
+
+describe('ShuffleAnswers', () => {
+    const QUIZ = `ShuffleAnswers: SETTING
+---
+Which colour is the sky?
+a) green
+*b) blue
+c) red
+---
+Match the animal to its family.
+^ dog - canine
+^ cat - feline
+^ - reptile
+`;
+
+    // Math.random() === 0 turns quiz.ts's Fisher-Yates into a left rotation by
+    // one, so a shuffle is observable without the test being flaky
+    beforeEach(() => {
+        vi.spyOn(Math, 'random').mockReturnValue(0);
+    });
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    function parse(setting: 'true' | 'false') {
+        const quiz = parseQuizVersion2(
+            QUIZ.replace('SETTING', setting),
+            new Config({})
+        );
+        return {
+            choice: quiz.questions[0],
+            matching: quiz.questions[1] as MatchingQuestion,
+        };
+    }
+
+    const plain = (html: string) => html.replace(/<[^>]*>/g, '').trim();
+
+    it('leaves answers in file order when the setting is false', () => {
+        const { choice, matching } = parse('false');
+        expect(choice.answers.map((a) => plain(a.html))).toEqual([
+            'green',
+            'blue',
+            'red',
+        ]);
+        expect(matching.answers.map((a) => a.html)).toEqual([
+            'canine',
+            'feline',
+            'reptile',
+        ]);
+    });
+
+    it('shuffles the answers when the setting is true', () => {
+        const { choice } = parse('true');
+        expect(choice.answers.map((a) => plain(a.html))).toEqual([
+            'blue',
+            'red',
+            'green',
+        ]);
+        // the correct answer travels with its text, wherever it lands
+        expect(
+            choice.answers.filter((a) => a.correct).map((a) => plain(a.html))
+        ).toEqual(['blue']);
+    });
+
+    it('shuffles a matching question only in the dropdown, as Canvas does', () => {
+        const { matching } = parse('true');
+        // prompts stay in file order down the left-hand side
+        expect(matching.pairs.map((pair) => plain(pair.promptHtml))).toEqual([
+            'dog',
+            'cat',
+        ]);
+        // the options offered for them do not
+        expect(matching.answers.map((a) => a.html)).toEqual([
+            'feline',
+            'reptile',
+            'canine',
+        ]);
+    });
+
+    it('still grades a shuffled matching question by the right option', () => {
+        const { matching } = parse('true');
+        const idOf = (text: string) =>
+            matching.answers.find((a) => a.html === text).id;
+        matching.selections = [idOf('canine'), idOf('feline')];
+        expect(matching.isCorrect()).toBe(true);
+        matching.selections = [idOf('feline'), idOf('canine')];
+        expect(matching.isCorrect()).toBe(false);
     });
 });

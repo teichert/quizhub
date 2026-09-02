@@ -1,4 +1,4 @@
-ShuffleAnswers: false
+ShuffleAnswers: true
 OneQuestionAtATime: false
 DueAt: 08/21/2030 23:59:00
 AllowedAttempts: -1

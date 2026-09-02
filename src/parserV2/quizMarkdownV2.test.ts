@@ -18,6 +18,21 @@ b) two
         expect(quiz.questions).toHaveLength(1);
     });
 
+    it('reads ShuffleAnswers however it is capitalised or spaced', () => {
+        for (const line of [
+            'ShuffleAnswers: true',
+            'ShuffleAnswers:true',
+            'shuffleanswers: TRUE',
+        ]) {
+            expect(parseQuizMarkdownV2(`${line}\n---\na) one\n`).shuffleAnswers).toBe(
+                true
+            );
+        }
+        expect(
+            parseQuizMarkdownV2('ShuffleAnswers: False\n---\na) one\n').shuffleAnswers
+        ).toBe(false);
+    });
+
     it('defaults ShuffleAnswers to false when missing', () => {
         const input = `---
 a) one
