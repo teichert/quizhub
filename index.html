@@ -49,10 +49,9 @@
 
             // Fetch the markdown content from the provided URL
             console.log('init');
-            const queryParams = new URLSearchParams(window.location.search);
-            const sourceUrl =
-                queryParams.get('source') || queryParams.get('s');
-            const encodedText = queryParams.get('text') || queryParams.get('t');
+            // which quiz to load, and which format to read it as
+            const { version, encodedText, sourceUrl } =
+                quizdown.readQuizSource(window.location.search);
 
             let downloadFn = markdownDownload;
 
@@ -60,12 +59,6 @@
             let authorUrl;
             let authorImageUrl;
 
-            let urlToFetch = '';
-
-            if (sourceUrl) {
-                // Use the direct URL provided by source or s
-                urlToFetch = sourceUrl;
-            }
             function handleMarkdown(markdown, params) {
                 if (!params) {
                     params = {};
@@ -88,14 +81,14 @@
                 quizdown
                     .register(quizdownKatex)
                     .register(quizdownHighlight)
-                    .createApp(markdown, newQuizElement, config);
+                    .createApp(markdown, newQuizElement, config, version);
             }
 
             if (encodedText) {
                 handleMarkdown(atob(encodedText), {});
-            } else if (urlToFetch) {
+            } else if (sourceUrl) {
                 downloadFn(
-                    urlToFetch,
+                    sourceUrl,
                     handleMarkdown,
                     (error) => {
                         // if (error && error.)
