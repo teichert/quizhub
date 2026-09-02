@@ -1,6 +1,8 @@
 import App from './App.svelte';
 import parseQuizdown from './parser.js';
 import parseQuizVersion2 from './parserV2/index.js';
+import { parseQuiz, readQuizSource } from './quizFormat.js';
+import type { QuizFormatVersion, QuizSource } from './quizFormat.js';
 import { Config } from './config.js';
 import marked from './customizedMarked.js';
 import type { Quiz } from './quiz';
@@ -8,9 +10,21 @@ import Toolbar from './Toolbar.svelte';
 
 export interface Quizdown {
     register(extension: QuizdownExtension): Quizdown;
-    createApp(rawQuizdown: string, node: Element, config: Config, version?: 1 | 2): App;
+    createApp(
+        rawQuizdown: string,
+        node: Element,
+        config: Config,
+        version?: QuizFormatVersion
+    ): App;
+    parseQuiz(
+        rawQuizdown: string,
+        config: Config,
+        version?: QuizFormatVersion
+    ): Quiz;
     parseQuizdown(rawQuizdown: string, config: Config): Quiz;
     parseQuizVersion2(rawQuizdown: string, config: Config): Quiz;
+    // reads a page's ?t=/?s=/?t2=/?s2= into the quiz to load and its format
+    readQuizSource(search: string): QuizSource;
     init(config: object): void;
     getMarkedParser(): typeof marked;
     createToolbar(node: Element): Toolbar;
@@ -25,7 +39,12 @@ function register(extension: QuizdownExtension): Quizdown {
     return this as Quizdown;
 }
 
-function createApp(rawQuizdown: string, node: Element, config: Config, version: 1 | 2 = 1): App {
+function createApp(
+    rawQuizdown: string,
+    node: Element,
+    config: Config,
+    version: QuizFormatVersion = 1
+): App {
     node.innerHTML = '';
     let root: ShadowRoot;
     if (!!node.shadowRoot) {
@@ -41,7 +60,7 @@ function createApp(rawQuizdown: string, node: Element, config: Config, version: 
         config = new Config({});
     }
 
-    let quiz = version === 2 ? parseQuizVersion2(rawQuizdown, config) : parseQuizdown(rawQuizdown, config);
+    let quiz = parseQuiz(rawQuizdown, config, version);
     let app = new App({
         // https://github.com/sveltejs/svelte/pull/5870
         target: root,
@@ -97,8 +116,10 @@ function createToolbar(node: Element): Toolbar {
 let quizdown: Quizdown = {
     init,
     register,
+    parseQuiz,
     parseQuizdown,
     parseQuizVersion2,
+    readQuizSource,
     createApp,
     getMarkedParser,
     createToolbar,

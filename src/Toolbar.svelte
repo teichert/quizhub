@@ -2,6 +2,7 @@
     import Button from './components/Button.svelte';
     import Icon from './components/Icon.svelte';
     import defaultText from './toolbarDefaultText';
+    import { readQuizSource, textParamFor } from './quizFormat';
     import { writable, get } from 'svelte/store';
     import { onMount } from 'svelte';
     import { text } from 'svelte/internal';
@@ -33,27 +34,17 @@
             '#1b73e8'
         );
 
-        const queryParams = new URLSearchParams(window.location.search);
+        const source = readQuizSource(window.location.search);
+        formatVersion = source.version;
 
-        const sourceUrl = queryParams.get('source') || queryParams.get('s');
-        const encodedText = queryParams.get('text') || queryParams.get('t');
-        // version 2: canvasManagement-format quiz markdown
-        const sourceUrl2 = queryParams.get('source2') || queryParams.get('s2');
-        const encodedText2 = queryParams.get('text2') || queryParams.get('t2');
-
-        formatVersion = encodedText2 || sourceUrl2 ? 2 : 1;
-        const resolvedSourceUrl = sourceUrl2 || sourceUrl;
-        const resolvedEncodedText = encodedText2 || encodedText;
-
-        if (resolvedSourceUrl) {
-            markdownDownload(resolvedSourceUrl, (text) => {
+        if (source.sourceUrl) {
+            markdownDownload(source.sourceUrl, (text) => {
                 content.set(text);
                 callOutsideOnInternalChange(text);
             });
             return;
-        } else if (resolvedEncodedText) {
-            const text = atob(resolvedEncodedText);
-            // const text = decodeURIComponent(encodedText);
+        } else if (source.encodedText) {
+            const text = atob(source.encodedText);
             content.set(text);
             callOutsideOnInternalChange(text);
             return;
@@ -108,7 +99,7 @@
     // than concatenated raw into the query string.
     function buildQuizUrl(pathname) {
         const encodedContent = btoa(get(content));
-        const paramName = formatVersion === 2 ? 't2' : 't';
+        const paramName = textParamFor(formatVersion);
         const url = new URL(window.location.href);
         url.pathname = pathname;
         url.search = '';

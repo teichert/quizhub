@@ -13,7 +13,7 @@ import {
 import type { NumericalAnswer } from '../quiz';
 import { Config } from '../config';
 import { parseQuizMarkdownV2, splitLines, SECTION_DELIMITER } from './quizMarkdownV2';
-import { renderMarkdown } from './render';
+import { renderMarkdown } from '../markdown';
 import type { ParsedQuestionV2 } from './types';
 
 // canvasManagement numerical answers: "42" (exact) or "[2, 5]" (range)

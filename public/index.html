@@ -49,25 +49,15 @@
 
             // Fetch the markdown content from the provided URL
             console.log('init');
-            const queryParams = new URLSearchParams(window.location.search);
-            const sourceUrl =
-                queryParams.get('source') || queryParams.get('s');
-            const encodedText = queryParams.get('text') || queryParams.get('t');
-            // version 2: canvasManagement-format quiz markdown
-            const sourceUrl2 =
-                queryParams.get('source2') || queryParams.get('s2');
-            const encodedText2 =
-                queryParams.get('text2') || queryParams.get('t2');
+            // which quiz to load, and which format to read it as
+            const { version, encodedText, sourceUrl } =
+                quizdown.readQuizSource(window.location.search);
 
             let downloadFn = markdownDownload;
 
             let authorName;
             let authorUrl;
             let authorImageUrl;
-
-            const version = (encodedText2 || sourceUrl2) ? 2 : 1;
-            const resolvedEncodedText = encodedText2 || encodedText;
-            let urlToFetch = sourceUrl2 || sourceUrl || '';
 
             function handleMarkdown(markdown, params) {
                 if (!params) {
@@ -94,11 +84,11 @@
                     .createApp(markdown, newQuizElement, config, version);
             }
 
-            if (resolvedEncodedText) {
-                handleMarkdown(atob(resolvedEncodedText), {});
-            } else if (urlToFetch) {
+            if (encodedText) {
+                handleMarkdown(atob(encodedText), {});
+            } else if (sourceUrl) {
                 downloadFn(
-                    urlToFetch,
+                    sourceUrl,
                     handleMarkdown,
                     (error) => {
                         // if (error && error.)

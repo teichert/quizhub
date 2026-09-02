@@ -1,4 +1,3 @@
-import DOMPurify from 'dompurify';
 import stripIndent from 'strip-indent';
 import {
     Quiz,
@@ -13,6 +12,7 @@ import {
 import type { QuestionType } from './quiz';
 import { Config, mergeAttributes, standardizeNames } from './config';
 import marked from './customizedMarked';
+import { htmlDecode, renderTokens, sanitizeHtml } from './markdown';
 
 function updateTimeAndPoints(config: Config, tokens: marked.Token[]): Config {
     config.timeForQuestion = findLastDirectiveValue(tokens, "time", config.timeForQuestion);
@@ -131,7 +131,7 @@ function extractTitleAndDescription(tokens) {
             // If no next question, all remaining tokens are part of description
             descriptionTokens = tokens.slice(firstHeadingIndex + 1);
         }
-        description = parseTokens(descriptionTokens);
+        description = renderTokens(descriptionTokens);
     } else {
         firstQuestionIdx = firstHeadingIndex;
     }
@@ -147,7 +147,7 @@ function parseOptions(tokens: marked.Token[], quizConfig: Config): Config {
     // custom token type: its payload is not in marked's Token union
     let data = options['data'] as Config;
     if (data['description']) {
-        data['description'] = DOMPurify.sanitize(data['description']);
+        data['description'] = sanitizeHtml(data['description']);
     }
     standardizeNames(data);
     return mergeAttributes(quizConfig, data);
@@ -220,19 +220,19 @@ function parseQuestion(
 
 function parseHint(tokens: marked.Token[]): string {
     let blockquotes = tokens.filter((token) => token['type'] == 'blockquote');
-    return parseTokens(blockquotes);
+    return renderTokens(blockquotes);
 }
 
 function parseExplanation(tokens: marked.Token[]): string {
     let explanations = tokens.filter(
         (token) => token['type'] == 'paragraph' || token['type'] == 'code'
     );
-    return parseTokens(explanations);
+    return renderTokens(explanations);
 }
 
 function parseHeading(tokens: marked.Token[]): string {
     let headings = tokens.filter((token) => token['type'] == 'heading');
-    return parseTokens(headings);
+    return renderTokens(headings);
 }
 
 function parseAnswers(tokens: marked.Token[]): Array<Answer> {
@@ -255,7 +255,7 @@ function parseAnswers(tokens: marked.Token[]): Array<Answer> {
 function parseAnswer(item: marked.Tokens.ListItem) {
     let comments = item['tokens'].filter((token) => token.type == 'blockquote');
     let texts = item['tokens'].filter((token) => token.type != 'blockquote');
-    return { text: parseTokens(texts), comment: parseTokens(comments) };
+    return { text: renderTokens(texts), comment: renderTokens(comments) };
 }
 
 function determineQuestionType(tokens: marked.Token[]): QuestionType {
@@ -282,17 +282,6 @@ function determineQuestionType(tokens: marked.Token[]): QuestionType {
         // helpful in editor when writing question.
         return 'NoChoiceQuestion';
     }
-}
-
-function parseTokens(tokens: marked.Token[]): string {
-    return DOMPurify.sanitize(marked.parser(tokens as marked.TokensList));
-}
-
-function htmlDecode(text: string) {
-    return text
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&amp;/g, '&');
 }
 
 export default parseQuizdown;
