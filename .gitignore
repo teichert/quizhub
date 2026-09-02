@@ -21,3 +21,4 @@ githubgist.json
 TODO.md
 icon-*.png
 !icon-mac.png
+.claude/settings.local.json
