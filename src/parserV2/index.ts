@@ -83,6 +83,34 @@ function buildQuestion(q: ParsedQuestionV2, options: Config): BaseQuestion {
                 options
             );
         }
+        case 'multiple_dropdowns': {
+            // every line is an option, kept as raw text like matching's; each
+            // prompt's dropdown offers the options in its own group
+            const matchOptions = q.answers.map(
+                (a, id) => new Answer(id, a.matchedText, false, '')
+            );
+            const idsInGroup = (group: number) =>
+                q.answers.flatMap((a, id) => (a.dropdownGroup === group ? [id] : []));
+            const pairs = q.answers.flatMap((a, id) =>
+                a.text
+                    ? [
+                          {
+                              promptHtml: renderMarkdown(a.text),
+                              correctMatchId: id,
+                              optionIds: idsInGroup(a.dropdownGroup),
+                          },
+                      ]
+                    : []
+            );
+            return new MatchingQuestion(
+                text,
+                explanation,
+                hint,
+                matchOptions,
+                pairs,
+                options
+            );
+        }
         case 'short_answer=': {
             // kept raw (not rendered to HTML): compared verbatim against the
             // user's typed response, never displayed

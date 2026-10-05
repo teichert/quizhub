@@ -157,6 +157,7 @@ Question types map onto quizhub's question types as follows:
 | `a)` / `*a)` answer lines | Single choice | yes |
 | `[ ]` / `[*]` answer lines | Multiple choice | yes |
 | `^ prompt - match` (optionally with `^ - distractor` lines) | Matching | yes, all-or-nothing |
+| `^` lines split into blank-line-separated groups | Multiple dropdowns: matching where each prompt offers only its group's answers | yes, all-or-nothing |
 | `= accepted text` lines followed by a trailing `short_answer=` line | Short answer | yes |
 | `= value` (exact) or `= [min, max]` (range) | Numerical | yes |
 | trailing `short answer`/`short_answer` line, no answers | Open response (text input) | no |

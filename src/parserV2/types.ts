@@ -4,6 +4,7 @@ export type QuestionTypeV2 =
     | 'multiple_choice'
     | 'multiple_answers'
     | 'matching'
+    | 'multiple_dropdowns'
     | 'numerical'
     | 'short_answer='
     | 'short_answer'
@@ -13,8 +14,11 @@ export type QuestionTypeV2 =
 export interface ParsedAnswerV2 {
     correct: boolean;
     text: string;
-    // matching only: the right-hand side of `^ prompt - match`
+    // matching and multiple dropdowns: the right-hand side of `^ prompt - match`
     matchedText?: string;
+    // multiple dropdowns only: which blank-line-separated group the line is
+    // in; each prompt's dropdown offers every answer in its group
+    dropdownGroup?: number;
 }
 
 export interface ParsedQuestionV2 {

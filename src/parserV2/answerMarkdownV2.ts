@@ -52,9 +52,40 @@ export function getQuestionType(linesAfterPoints: string[]): QuestionTypeV2 {
 
     if (MULTIPLE_CHOICE_LINE.test(firstAnswerLine)) return 'multiple_choice';
     if (MULTIPLE_ANSWER_LINE.test(firstAnswerLine)) return 'multiple_answers';
-    if (firstAnswerLine.startsWith('^')) return 'matching';
+    // "^" lines in one block are matching; blank-line-separated blocks of them
+    // are multiple dropdowns, one dropdown per prompt
+    if (firstAnswerLine.startsWith('^'))
+        return splitIntoDropdownGroups(answerLines).length > 1
+            ? 'multiple_dropdowns'
+            : 'matching';
 
     return '';
+}
+
+// A blank (or whitespace-only) line between "^" lines starts a new dropdown
+// group. splitAnswerLinesWithMultilineSupport attaches blank lines to the
+// answer before them, so a group ends at any answer carrying one.
+function splitIntoDropdownGroups(answerLines: string[]): string[][] {
+    const groups: string[][] = [[]];
+    for (const line of answerLines) {
+        groups[groups.length - 1].push(line);
+        const endsGroup = line
+            .split('\n')
+            .slice(1)
+            .some((l) => l.trim() === '');
+        if (endsGroup) groups.push([]);
+    }
+    return groups.filter((group) => group.length > 0);
+}
+
+// a line with no prompt is one of its group's distractors
+function parseDropdownAnswers(answerLines: string[]): ParsedAnswerV2[] {
+    return splitIntoDropdownGroups(answerLines).flatMap((group, dropdownGroup) =>
+        group.map((line) => {
+            const { text, matchedText } = parseMatchingAnswer(line.trimStart());
+            return { correct: text !== '', text, matchedText, dropdownGroup };
+        })
+    );
 }
 
 // `^ prompt - match`, or `^ - distractor` for an unmatched extra option
@@ -89,6 +120,7 @@ const TYPES_WITH_ANSWERS: QuestionTypeV2[] = [
     'multiple_choice',
     'multiple_answers',
     'matching',
+    'multiple_dropdowns',
     'short_answer=',
     'numerical',
 ];
@@ -106,6 +138,12 @@ export function getAnswers(
         questionType === 'short_answer='
             ? linesAfterPoints.slice(0, -1)
             : linesAfterPoints;
+    if (questionType === 'multiple_dropdowns') {
+        return {
+            answers: parseDropdownAnswers(splitAnswerLinesWithMultilineSupport(lines)),
+            matchDistractors: [],
+        };
+    }
     const allAnswers = splitAnswerLinesWithMultilineSupport(lines).map((line) =>
         parseAnswerLine(line, questionType)
     );

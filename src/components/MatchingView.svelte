@@ -9,7 +9,7 @@
             <span class="prompt">{@html pair.promptHtml}</span>
             <select bind:value="{question.selections[i]}">
                 <option value="{null}">-</option>
-                {#each question.answers as option}
+                {#each question.optionsFor(pair) as option}
                     <option value="{option.id}">{option.html}</option>
                 {/each}
             </select>

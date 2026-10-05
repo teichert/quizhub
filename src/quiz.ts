@@ -310,6 +310,9 @@ export interface MatchingPair {
     promptHtml: string;
     // Answer.id of the match option that is correct for this prompt
     correctMatchId: number;
+    // Answer.ids this prompt's dropdown offers; every option when absent.
+    // Multiple dropdowns questions give each prompt only its own group's.
+    optionIds?: Array<number>;
 }
 
 export class MatchingQuestion extends BaseQuestion {
@@ -336,6 +339,13 @@ export class MatchingQuestion extends BaseQuestion {
         // `pairs` is still unset the first time this runs, from BaseQuestion's
         // constructor -- the constructor body fills the selections in after
         this.selections = (this.pairs || []).map(() => null);
+    }
+
+    // in `answers` order, so a shuffle shows in every dropdown
+    optionsFor(pair: MatchingPair): Array<Answer> {
+        return this.answers.filter(
+            (option) => !pair.optionIds || pair.optionIds.includes(option.id)
+        );
     }
 
     isCorrect() {

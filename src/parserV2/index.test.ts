@@ -104,6 +104,37 @@ describe('parseQuizVersion2', () => {
         expect(matching.pairs.map((p) => p.correctMatchId)).toEqual([0, 1]);
     });
 
+    it('offers each dropdown only the options in its own group', () => {
+        const quiz = parseQuizVersion2(
+            `---
+Plan the function.
+
+^ Name - min_cost_from
+^ - paint_next
+
+^ Counting - sum
+^ Optimizing - minimum
+^ - product`,
+            new Config({})
+        );
+        const dropdowns = quiz.questions[0] as MatchingQuestion;
+        expect(dropdowns.questionType).toBe('Matching');
+        const offered = dropdowns.pairs.map((pair) =>
+            dropdowns.optionsFor(pair).map((a) => a.html)
+        );
+        expect(offered).toEqual([
+            ['min_cost_from', 'paint_next'],
+            ['sum', 'minimum', 'product'],
+            ['sum', 'minimum', 'product'],
+        ]);
+        const idOf = (text: string) =>
+            dropdowns.answers.find((a) => a.html === text).id;
+        dropdowns.selections = [idOf('min_cost_from'), idOf('sum'), idOf('minimum')];
+        expect(dropdowns.isCorrect()).toBe(true);
+        dropdowns.selections = [idOf('min_cost_from'), idOf('minimum'), idOf('sum')];
+        expect(dropdowns.isCorrect()).toBe(false);
+    });
+
     it('hides +/-/... feedback behind the hint instead of showing it up front', () => {
         const quiz = parseQuizVersion2(
             `ShuffleAnswers: false
@@ -193,10 +224,11 @@ Fourth, back down to 5s
         // the closing essay gets two minutes
         expect(
             quiz.questions.map((q) => q.allottedTimeMilliSeconds / 1000)
-        ).toEqual([20, 20, 20, 20, 20, 20, 30, 30, 120]);
+        ).toEqual([20, 20, 20, 20, 20, 20, 20, 30, 30, 120]);
         expect(quiz.questions.map((q) => q.questionType)).toEqual([
             'SingleChoice',
             'MultipleChoice',
+            'Matching',
             'Matching',
             'Numerical',
             'ShortAnswer',
@@ -283,6 +315,29 @@ Match the animal to its family.
             'feline',
             'reptile',
             'canine',
+        ]);
+    });
+
+    it('shuffles within each dropdown without mixing in other groups', () => {
+        const quiz = parseQuizVersion2(
+            `ShuffleAnswers: true
+---
+q
+
+^ A - a1
+^ - a2
+^ - a3
+
+^ B - b1
+^ - b2`,
+            new Config({})
+        );
+        const dropdowns = quiz.questions[0] as MatchingQuestion;
+        expect(
+            dropdowns.pairs.map((pair) => dropdowns.optionsFor(pair).map((a) => a.html))
+        ).toEqual([
+            ['a2', 'a3', 'a1'],
+            ['b1', 'b2'],
         ]);
     });
 

@@ -20,6 +20,18 @@ describe('getQuestionType', () => {
         );
     });
 
+    it('detects multiple_dropdowns from blank-line-separated ^ groups', () => {
+        expect(
+            getQuestionType(['q', '', '^ Name - f', '^ - g', '', '^ Combine - min'])
+        ).toBe('multiple_dropdowns');
+    });
+
+    it('keeps one ^ group after a blank line as matching', () => {
+        expect(getQuestionType(['q', '', '', '^ dog - canine', '^ cat - feline'])).toBe(
+            'matching'
+        );
+    });
+
     it('detects numerical from a trailing = line', () => {
         expect(getQuestionType(['question text', '= 42'])).toBe('numerical');
     });
@@ -89,6 +101,20 @@ describe('getAnswers', () => {
             { correct: true, text: 'cat', matchedText: 'feline' },
         ]);
         expect(matchDistractors).toEqual(['reptile']);
+    });
+
+    it('tags each dropdown line with its group, distractors included', () => {
+        const { answers, matchDistractors } = getAnswers(
+            ['q', '^ Name - f', '^ - g', '', '', '^ Combine - min', '^ Pick - max'],
+            'multiple_dropdowns'
+        );
+        expect(answers).toEqual([
+            { correct: true, text: 'Name', matchedText: 'f', dropdownGroup: 0 },
+            { correct: false, text: '', matchedText: 'g', dropdownGroup: 0 },
+            { correct: true, text: 'Combine', matchedText: 'min', dropdownGroup: 1 },
+            { correct: true, text: 'Pick', matchedText: 'max', dropdownGroup: 1 },
+        ]);
+        expect(matchDistractors).toEqual([]);
     });
 
     it('keeps a " - " inside the matched text of a matching answer', () => {
