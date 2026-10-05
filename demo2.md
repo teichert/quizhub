@@ -24,6 +24,16 @@ Match each animal to its family.
 ^ cat - feline
 ^ - reptile
 ---
+Fill in each animal's family and the sound it makes.
+
+^ Dog's family - canine
+^ Cat's family - feline
+^ - reptile
+
+^ Dog's sound - bark
+^ Cat's sound - meow
+^ - hiss
+---
 What is 6 * 7?
 = 42
 ---
